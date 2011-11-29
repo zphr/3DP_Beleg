@@ -5,12 +5,13 @@ using namespace std;
 class CubicPolynomial
 {
   public:
-   /* "low" to "high" coeffcient */
+   /* vom niedrigen zum Koeffizienten des höchsten Grades */
    CubicPolynomial(osg::Vec4 coeffcients);
    ~CubicPolynomial();
 
    inline float calcAt(float t);
    inline float firstDerivCalcAt(float t);
+   inline float secondDerivCalcAt(float t);
 
   protected:
    osg::Vec4 _coefficients;
