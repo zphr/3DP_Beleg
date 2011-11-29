@@ -23,6 +23,8 @@ NaturalCubicSpline::~NaturalCubicSpline()
 
 void NaturalCubicSpline::calcCoefficientsXYZ()
 {
+   // Git Test 1 2 3
+   
    float *coords_x = new float[_knots->getNumElements()];
    float *coords_y = new float[_knots->getNumElements()];
    float *coords_z = new float[_knots->getNumElements()];
