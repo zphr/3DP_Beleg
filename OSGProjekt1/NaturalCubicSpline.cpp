@@ -1,5 +1,7 @@
 #include "NaturalCubicSpline.h"
 
+// human branch test bla bla bla
+
 NaturalCubicSpline::NaturalCubicSpline(
    osg::ref_ptr<osg::Vec4Array> knots,
    int curveSteps)
