@@ -1,0 +1,31 @@
+
+
+* Ziele / Fragestellungen
+  1. [X] Git Grundlagen lernen
+  2. [X] CubicPolynomial-Klasse einbauen
+  3. [2/3] 3D-Stiele
+     - [X] Stützpunkte des Splines zeichnen lassen
+     - [X] Tangenten, Normalen, Birnormalen berechnen lassen + zeichnen
+     - SHANI, U BALLARD, D "Splines as embeddings for generalized cylinders"
+     - [ ] "Computation of Rotation Minimizing Frame in Computer
+       Graphics" implementieren
+  4. [ ] sanfte Astgabelungen
+  5. [ ] zufällige Generierung
+  6. [ ] Jitter
+  7. [ ] UV-Koordinaten
+  8. [ ] Blätter
+  9. [ ] Einbindung/Gliederung in OSG (Klassenhierarchie/Vererbung)
+
+* 3D-Stiele
+  - [[http://stackoverflow.com/questions/5088275/opengl-tube-along-a-path][siehe Antwort auf Stackoverflow]]
+
+** RMF statt Frenet Frame implementieren
+   - "Computation of Rotation Minimizing Frame in Computer Graphics"
+   - Vorgehen:
+     1. Eingangswerte
+        - ein selbst gegebenes Koordinatensystem
+        - die Punkte an der Kurve
+        - normalisierte Tangentvektoren an den Punkten der Kurve
+     2. für i = 0 bis Knotenanzahl - 1
+        1. Reflektionsvektor v_1 = x_i+1 - x_i
+        2. c_1 = v_1 * v_1

@@ -9,9 +9,9 @@ class CubicPolynomial
    CubicPolynomial(osg::Vec4 coeffcients);
    ~CubicPolynomial();
 
-   inline float calcAt(float t);
-   inline float firstDerivCalcAt(float t);
-   inline float secondDerivCalcAt(float t);
+   float calcAt(float t);
+   float firstDerivCalcAt(float t);
+   float secondDerivCalcAt(float t);
 
   protected:
    osg::Vec4 _coefficients;

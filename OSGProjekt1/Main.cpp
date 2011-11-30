@@ -21,45 +21,56 @@ using namespace std;
 
 struct PlantStack
 {
-  osg::Matrix rot_mat;
-  osg::Vec4 dist;
+   osg::Matrix rot_mat;
+   osg::Vec4 dist;
 };
 
 int main( int argc, char** argv)
 {
 
-    osg::ref_ptr<osg::Geode> root = new osg::Geode;
+   osg::ref_ptr<osg::Geode> root = new osg::Geode;
 
-    osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
-    points->push_back(osg::Vec4(0,-5,0,1));
-    points->push_back(osg::Vec4(0,0,0,1));
-    points->push_back(osg::Vec4(1,1,0,1));
+   osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
+   points->push_back(osg::Vec4(0,0,0,1));
+   points->push_back(osg::Vec4(1,1,0,1));
+   points->push_back(osg::Vec4(2,2,0,1));
+   // points->push_back(osg::Vec4(1,-1,0,1));
+   // points->push_back(osg::Vec4(4,3,0,1));
 
-    /*NaturalCubicSpline spline(points);*/
-    /*root->addDrawable( spline._geometry );*/
+   NaturalCubicSpline spline(points);
+   root->addDrawable( spline._geometry );
+   root->addDrawable( spline.getPointSprites(root) );
 
-    map<char, string> rules;
-    /*rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";*/
+   spline.calcTangentCoordinateSystems(root);
 
-    /*rules['A'] = "[&FLA]{{{{{[&FLA]{{{{{{[&FLA]";*/
-    /*rules['F'] = "S{{{{F";*/
-    /*rules['S'] = "F";*/
+   // root->addDrawable( spline.calcTangentAt(0.5) );
+   // root->addDrawable( spline.calcTangentAt(1.5) );
+   // root->addDrawable( spline.calcTangentAt(2.5) );
+   // root->addDrawable( spline.calcTangentAt(3.5) );
 
-    rules['X'] = "F[[{X]&X]F[^}}(34.4)FX]&XF&F";
-    rules['F'] = "FF";
 
-    //rules['X'] = "FF[&F]F";
+   // map<char, string> rules;
+   // /*rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";*/
 
-    float delta = 22.5;
-    osg::Vec4 dist (0.0, 0.0, 0.5, 1.0);
-    osg::Matrix rot_mat;
+   // /*rules['A'] = "[&FLA]{{{{{[&FLA]{{{{{{[&FLA]";*/
+   // /*rules['F'] = "S{{{{F";*/
+   // /*rules['S'] = "F";*/
 
-    LSysPlant plant(2, delta, rules, rules['X'],  dist, rot_mat);
+   // rules['X'] = "F[[{X]&X]F[^}}(34.4)FX]&XF&F";
+   // rules['F'] = "FF";
 
-    plant.drawPlant(root);
+   // //rules['X'] = "FF[&F]F";
 
-    osgViewer::Viewer viewer;
-    viewer.setSceneData( root.get() );
-    return viewer.run();
+   // float delta = 22.5;
+   // osg::Vec4 dist (0.0, 0.0, 0.5, 1.0);
+   // osg::Matrix rot_mat;
+
+   // LSysPlant plant(2, delta, rules, rules['X'],  dist, rot_mat);
+
+   // plant.drawPlant(root);
+
+   osgViewer::Viewer viewer;
+   viewer.setSceneData( root.get() );
+   return viewer.run();
 }
 
