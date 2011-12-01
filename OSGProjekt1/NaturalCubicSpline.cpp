@@ -4,7 +4,7 @@ NaturalCubicSpline::NaturalCubicSpline(
    osg::ref_ptr<osg::Vec4Array> knots,
    int curveSteps)
    :  _knots(knots.get()), _curveSteps(curveSteps)
-   
+
 {
    _geometry = new osg::Geometry;
    calcPolynomialsXYZ();
@@ -19,8 +19,6 @@ NaturalCubicSpline::~NaturalCubicSpline()
 
 void NaturalCubicSpline::calcPolynomialsXYZ()
 {
-   // Git Test 1 2 3
-   
    float *coords_x = new float[_knots->getNumElements()];
    float *coords_y = new float[_knots->getNumElements()];
    float *coords_z = new float[_knots->getNumElements()];
@@ -79,13 +77,13 @@ vector<CubicPolynomial> NaturalCubicSpline::calcPolynomials(float *coords, int c
    {
       // Koeffizienten der Polynome berechnen
       polynomials.push_back( CubicPolynomial(
-                                 osg::Vec4(
-                                    coords[i],      // d
-                                    derivative_result[i], // c
-                                    3*(coords[i+1]-coords[i]) - 2*derivative_result[i] - derivative_result[i+1], // b
-                                    2*(coords[i]-coords[i+1]) + derivative_result[i] + derivative_result[i+1] // a
-                                    )
-                                 ));
+                                osg::Vec4(
+                                   coords[i],      // d
+                                   derivative_result[i], // c
+                                   3*(coords[i+1]-coords[i]) - 2*derivative_result[i] - derivative_result[i+1], // b
+                                   2*(coords[i]-coords[i+1]) + derivative_result[i] + derivative_result[i+1] // a
+                                   )
+                                ));
    }
 
    delete gamma;
@@ -95,17 +93,11 @@ vector<CubicPolynomial> NaturalCubicSpline::calcPolynomials(float *coords, int c
    return polynomials;
 }
 
-osg::Geometry* NaturalCubicSpline::calcTangentAt(float t)
+osg::Vec3 NaturalCubicSpline::calcTangentAt(float t)
 {
 
    int i = (int) t;
    float u = t - i;
-
-   float x = _polynomialsX[i].calcAt(u);
-   float y = _polynomialsY[i].calcAt(u);
-   float z = _polynomialsZ[i].calcAt(u);
-   osg::Vec3 vec(x,y,z);
-   osg::Vec4 vec4(x,y,z,1);
 
    float tangent_x = _polynomialsX[i].firstDerivCalcAt(u);
    float tangent_y = _polynomialsY[i].firstDerivCalcAt(u);
@@ -113,95 +105,115 @@ osg::Geometry* NaturalCubicSpline::calcTangentAt(float t)
    osg::Vec3 tangent(tangent_x,tangent_y,tangent_z); // y
    tangent.normalize();
 
-   // float normal_x = _polynomialsX[i].secondDerivCalcAt(u);
-   // float normal_y = _polynomialsY[i].secondDerivCalcAt(u);
-   // float normal_z = _polynomialsZ[i].secondDerivCalcAt(u);
-   // osg::Vec3 normal(normal_x,normal_y,normal_z); // y
-   // normal.normalize();
-
-   // osg::Vec3 binormal((tangent ^ normal)/((tangent ^ normal).length())); // x
-
-   // normal = binormal ^ tangent;
-
-   // tangent.normalize();
-   // binormal.normalize();
-   // normal.normalize();
-
-   // tangent *= 0.1;
-   // binormal *= 0.1;
-   // normal *= 0.1;
-
-   // printf("angle %f %f\n", acos((tangent * normal)-((int) (tangent*normal))), acos((vec * tangent)-((int) (tangent*vec))));
-
-   // osg::ref_ptr<osg::Vec3Array>tangent_vertices = new osg::Vec3Array;
-
-   // tangent_vertices->push_back(vec);
-   // tangent_vertices->push_back(vec + tangent);
-
-   // tangent_vertices->push_back(vec);
-   // tangent_vertices->push_back(vec + normal);
-
-   // tangent_vertices->push_back(vec);
-   // tangent_vertices->push_back(vec + binormal);
-
-
-
-   osg::Vec3 binormal(vec ^ tangent); // x
-   // if(((vec * tangent) > 1.0f) || ((vec * tangent) < -1.0f))
-   //    binormal = (tangent ^ vec); // x
-
-   binormal.normalize();
-
-   printf("angle %f %f\n", acos((tangent * vec)-((int) (tangent*vec))), acos((vec * tangent)));
-
-   osg::Vec3 normal(binormal ^ tangent); // z
-   normal.normalize();
-
-   osg::Matrix mat(
-      binormal.x(), tangent.x(), normal.x(), vec.x(),
-      binormal.y(), tangent.y(), normal.y(), vec.y(),
-      binormal.z(), tangent.z(), normal.z(), vec.z(),
-                 0,           0,          0,       1
-      );
-
-   mat.scale(osg::Vec3(0.25,0.25,0.25));
-
-   osg::ref_ptr<osg::Vec4Array>tangent_vertices = new osg::Vec4Array;
-    
-   osg::Vec4 x_axis(1,0,0,1);
-   osg::Vec4 y_axis(0,1,0,1);
-   osg::Vec4 z_axis(0,0,1,1);
-
-   tangent_vertices->push_back(vec4);
-   tangent_vertices->push_back(mat*x_axis);
-
-   tangent_vertices->push_back(vec4);
-   tangent_vertices->push_back(mat*y_axis);
-
-   tangent_vertices->push_back(vec4);
-   tangent_vertices->push_back(mat*z_axis);
-   
-   osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
-
-   tangent_geo->setVertexArray( tangent_vertices ); 
-   tangent_geo->addPrimitiveSet( 
-      new osg::DrawArrays(GL_LINES, 0, tangent_vertices->getNumElements()) );
-
-   return tangent_geo.release();
-
+   return tangent;
 }
 
 void NaturalCubicSpline::calcTangentCoordinateSystems(osg::ref_ptr<osg::Geode> root)
 {
-   for(int i=0; i < _knots->getNumElements()-2; i++)
+   // for(int i=0; i < _knots->getNumElements()-2; i++)
+   // {
+   //    for(int j = 0; j <=_curveSteps; j++)
+   //    {
+   //       float u = i + (j / (float) _curveSteps);
+   //       root->addDrawable( calcTangentAt(u) );
+   //    }
+   // }
+
+}
+
+void NaturalCubicSpline::calcDoubleReflection(osg::ref_ptr<osg::Geode> root)
+{
+   osg::Vec4 x_axis(1,0,0,1);
+   osg::Vec4 y_axis(0,1,0,1);
+   osg::Vec4 z_axis(0,0,1,1);
+
+   osg::ref_ptr<osg::Vec3Array> r = new osg::Vec3Array;
+   osg::ref_ptr<osg::Vec3Array> s = new osg::Vec3Array;
+
+   // ersten Frame vorgeben
+   r->push_back( osg::Vec3(1,0,0) );
+   s->push_back( osg::Vec3(0,1,0) );
+   (*_tangents)[0] = osg::Vec3(0,0,1);
+
+   for(int i = 0; i < _vertices->getNumElements()-1; i++)
    {
-      for(int j = 0; j <=_curveSteps; j++)
-      {
-         float u = i + (j / (float) _curveSteps);
-         root->addDrawable( calcTangentAt(u) );
-      }
+      osg::Vec3 v1 = (*_vertices)[i+1] - (*_vertices)[i];
+      float c1 = v1 * v1;
+
+      osg::Vec3 rLi = (*r)[i] - v1 * (v1 * ((*r)[i])) * (2/c1);
+      osg::Vec3 tLi = (*_tangents)[i] -  v1 * (v1 * (*_tangents)[i]) * (2/c1);
+
+      osg::Vec3 v2 = (*_tangents)[i+1] - tLi;
+      float c2 = v2 * v2;
+      r->push_back( osg::Vec3( rLi - v2 * (v2 * rLi) * (2/c2) ) );
+      s->push_back( (*_tangents)[i+1] ^ (*r)[i+1] );
+
+      osg::Matrix mat(
+         (*r)[i+1].x(), (*s)[i+1].x(), (*_tangents)[i+1].x(), (*_vertices)[i+1].x(),
+         (*r)[i+1].y(), (*s)[i+1].y(), (*_tangents)[i+1].y(), (*_vertices)[i+1].y(),
+         (*r)[i+1].z(), (*s)[i+1].z(), (*_tangents)[i+1].z(), (*_vertices)[i+1].z(),
+         0,           0,          0,       1
+         );
+
+      osg::Vec4 vec4 = osg::Vec4(
+         (*_vertices)[i+1].x(),
+         (*_vertices)[i+1].y(),
+         (*_vertices)[i+1].z(),
+         1
+         );
+
+      osg::ref_ptr<osg::Vec4Array>tangent_vertices = new osg::Vec4Array;
+
+      tangent_vertices->push_back(vec4);
+      tangent_vertices->push_back(mat*x_axis);
+
+      tangent_vertices->push_back(vec4);
+      tangent_vertices->push_back(mat*y_axis);
+
+      tangent_vertices->push_back(vec4);
+      tangent_vertices->push_back(mat*z_axis);
+
+      osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
+
+      tangent_geo->setVertexArray( tangent_vertices ); 
+      tangent_geo->addPrimitiveSet( 
+         new osg::DrawArrays(GL_LINES, 0, tangent_vertices->getNumElements()) );
+
+      root->addDrawable( tangent_geo );
+
    }
-   
+}
+
+osg::Geometry* NaturalCubicSpline::drawCylinderAlongSpline()
+{
+
+   return _geometry;
+}
+
+osg::Geometry* NaturalCubicSpline::drawSpline()
+{
+   // TODO: muss ich _geometry wirklich immer neu allokieren?
+   if(_geometry)
+      _geometry.release();
+   _geometry = new osg::Geometry;
+
+   _geometry->setVertexArray( _vertices );
+   _geometry->addPrimitiveSet( 
+      new osg::DrawArrays(GL_LINE_STRIP, 0, _vertices->getNumElements()) );
+
+   return _geometry.get();
+}
+
+inline osg::Vec3 NaturalCubicSpline::calcAt(float t)
+{
+   int i = (int) t;
+   float u = t - i;
+
+   float x = _polynomialsX[i].calcAt(u);
+   float y = _polynomialsY[i].calcAt(u);
+   float z = _polynomialsZ[i].calcAt(u);
+
+   return osg::Vec3(x,y,z);
 }
 
 void NaturalCubicSpline::calcSpline()
@@ -210,32 +222,24 @@ void NaturalCubicSpline::calcSpline()
       _vertices.release();
    _vertices = new osg::Vec3Array;
 
+   if(_tangents)
+      _tangents.release();
+   _tangents = new osg::Vec3Array;
+
    for(int i=0; i < _knots->getNumElements()-1; i++)
    {
-      for(int j = 0; j <=_curveSteps; j++)
+      for(int j = 0; j <=_curveSteps-1; j++)
       {
          float u = j / (float) _curveSteps;
-
-         float x = _polynomialsX[i].calcAt(u);
-         float y = _polynomialsY[i].calcAt(u);
-         float z = _polynomialsZ[i].calcAt(u);
-         
-         _vertices->push_back(osg::Vec3(x,y,z));
+         u += i;
+         _vertices->push_back( calcAt(u) );
+         _tangents->push_back( calcTangentAt(u) );
       }
    }
-
-   if(_geometry)
-      _geometry.release();
-   _geometry = new osg::Geometry;
-
-   _geometry->setVertexArray( _vertices );
-   _geometry->addPrimitiveSet( 
-      new osg::DrawArrays(GL_LINE_STRIP, 0, _vertices->getNumElements()) );
 }
 
 osg::Geometry* NaturalCubicSpline::getPointSprites(osg::ref_ptr<osg::Geode> root)
 {
-
    osg::ref_ptr<osg::Geometry> sprites = new osg::Geometry;
    sprites->setVertexArray( _knots.get() );
 

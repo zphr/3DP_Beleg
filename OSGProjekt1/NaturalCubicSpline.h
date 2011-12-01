@@ -21,9 +21,13 @@ class NaturalCubicSpline
         void calcPolynomialsXYZ();
         vector<CubicPolynomial> calcPolynomials(float *coords, int count);
         void calcSpline();
+        osg::Geometry* drawSpline();
+        osg::Geometry* drawCylinderAlongSpline();
+        inline osg::Vec3 calcAt(float t);
 
+        void calcDoubleReflection(osg::ref_ptr<osg::Geode> root);
         void calcTangentCoordinateSystems(osg::ref_ptr<osg::Geode> root);
-        osg::Geometry* calcTangentAt(float t);
+        osg::Vec3 calcTangentAt(float t);
         osg::Geometry* getPointSprites(osg::ref_ptr<osg::Geode> root);
 
         // Auflösung des Splines
@@ -32,6 +36,7 @@ class NaturalCubicSpline
         osg::ref_ptr<osg::Vec4Array> _knots;
         // Scheitelpunkte des Splines
         osg::ref_ptr<osg::Vec3Array> _vertices;
+        osg::ref_ptr<osg::Vec3Array> _tangents;
 
         vector<CubicPolynomial> _polynomialsX;
         vector<CubicPolynomial> _polynomialsY;

@@ -3,12 +3,17 @@
 * Ziele / Fragestellungen
   1. [X] Git Grundlagen lernen
   2. [X] CubicPolynomial-Klasse einbauen
-  3. [2/3] 3D-Stiele
+  3. [5/7] 3D-Stiele
      - [X] Stützpunkte des Splines zeichnen lassen
      - [X] Tangenten, Normalen, Birnormalen berechnen lassen + zeichnen
      - SHANI, U BALLARD, D "Splines as embeddings for generalized cylinders"
-     - [ ] "Computation of Rotation Minimizing Frame in Computer
+     - [X] "Computation of Rotation Minimizing Frame in Computer
        Graphics" implementieren
+     - [X] ganzen Pfad zeichnen lassen
+     - [ ] Double Reflection aufräumen
+     - [X] calcSpine nicht zum zeichnen des Splines verwenden sondern
+       drawSpline()
+     - [ ] verschiedene DAU-Sicherungen einbauen usw.
   4. [ ] sanfte Astgabelungen
   5. [ ] zufällige Generierung
   6. [ ] Jitter
