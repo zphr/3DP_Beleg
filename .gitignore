@@ -1,3 +1,8 @@
+*~
+*.~polynomials~
+*.cpp~
+*.h~
+
 /OSGProjekt1/LSysPlant.cpp~
 /OSGProjekt1/Debug/vc90.pdb
 /OSGProjekt1/LSysPlant.h~
@@ -28,9 +33,6 @@
 /x64/Debug/OSGProjekt1.ilk
 /x64/Debug/OSGProjekt1.pdb
 /x64/Debug/output.txt
-
-*.cpp~
-*.h~
 
 /OSGProjekt1/Release
 /OSGProjekt1/Release/Main.obj
