@@ -18,6 +18,7 @@ using namespace std;
 #include <osg/PointSprite>
 #include <osg/Texture2D>
 #include <osg/BlendFunc>
+#include <osg/PolygonMode>
 
 struct PlantStack
 {
@@ -30,19 +31,25 @@ int main( int argc, char** argv)
 
    osg::ref_ptr<osg::Geode> root = new osg::Geode;
 
+   // osg::PolygonMode * polygonMode = new osg::PolygonMode;
+   // polygonMode->setMode( osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE );
+   // osg::StateSet* stateSet = root->getOrCreateStateSet();
+   // stateSet->setAttributeAndModes( polygonMode,
+   //                                 osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
+
    osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
-   points->push_back(osg::Vec4(0,0,0,1));
-   points->push_back(osg::Vec4(5,5,-5,1));
-   points->push_back(osg::Vec4(10,10,-10,1));
-   points->push_back(osg::Vec4(2,0,0,1));
-   points->push_back(osg::Vec4(8,1,0,1));
-   points->push_back(osg::Vec4(4,0,-6,1));
+   points->push_back(osg::Vec4(1,15,0,1));
+   points->push_back(osg::Vec4(10,10,0,1));
+   // points->push_back(osg::Vec4(10,10,10,1));
+   points->push_back(osg::Vec4(20,0,0,1));
+   // points->push_back(osg::Vec4(8,1,0,1));
+   // points->push_back(osg::Vec4(4,0,-6,1));
 
    NaturalCubicSpline spline(points);
    root->addDrawable( spline.drawSpline() );
-   root->addDrawable( spline.getPointSprites(root) );
-
-   spline.calcDoubleReflection( root );
+   // root->addDrawable( spline.getPointSprites(root) );
+   root->addDrawable( spline.drawExtrudedCylinder(12, 0.25f) );
+   // root->addDrawable( spline.drawTangentCoordinateSystems() );
 
    // map<char, string> rules;
    // /*rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";*/

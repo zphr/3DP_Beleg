@@ -7,9 +7,7 @@ NaturalCubicSpline::NaturalCubicSpline(
 
 {
    _geometry = new osg::Geometry;
-   calcPolynomialsXYZ();
    calcSpline();
-
 }
 
 NaturalCubicSpline::~NaturalCubicSpline()
@@ -108,32 +106,145 @@ osg::Vec3 NaturalCubicSpline::calcTangentAt(float t)
    return tangent;
 }
 
-void NaturalCubicSpline::calcTangentCoordinateSystems(osg::ref_ptr<osg::Geode> root)
+osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution, float scale)
 {
-   // for(int i=0; i < _knots->getNumElements()-2; i++)
+   float x, y;
+   osg::Vec4 circle_vert;
+   float PI_step = (2*M_PI)/(float)resolution;
+
+   int face_count  = resolution * (_vertices->getNumElements()-1);
+   osg::ref_ptr<osg::Vec4Array> cylinder_verts = new osg::Vec4Array;
+   osg::ref_ptr<osg::Vec3Array> cylinder_normals = new osg::Vec3Array;
+   osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
+   unsigned int elements = _vertices->getNumElements();
+   int k = 0;
+
+   for(int i=0; i < elements; i++)
+   {
+      k = 0;
+      for(float j=0; j < (2*M_PI)-PI_step; j+=PI_step, k++)
+      {
+         x = cos(j);
+         y = sin(j);
+
+         circle_vert = osg::Vec4(x, y, 0, 1);
+         circle_vert *= scale;
+         circle_vert[3] = 1;
+         
+         cylinder_verts->push_back(_matrices[i]*circle_vert);
+
+         circle_vert.normalize();
+         osg::Vec4 test_v(_matrices[i]*circle_vert);
+         osg::Vec3 t3(test_v.x(), test_v.y(), test_v.z());
+         t3.normalize();
+         cylinder_normals->push_back(t3);
+
+         if(i < (elements-1))
+         {
+            if((i*resolution + k +1)%resolution != 0)
+            {
+               face_indices->push_back(i*resolution + k);
+               face_indices->push_back(i*resolution + k +1);
+               face_indices->push_back(i*resolution + k +resolution+1);
+               face_indices->push_back(i*resolution + k +resolution);
+            }              
+            else           
+            {              
+               face_indices->push_back(i*resolution + k );
+               face_indices->push_back(i*resolution + k -(resolution-1));
+               face_indices->push_back(i*resolution + k +1);            
+               face_indices->push_back(i*resolution + k +resolution);
+            }
+         }
+      }
+
+      
+   }
+
+   // for(int i=0; i<face_count*4; i++)
    // {
-   //    for(int j = 0; j <=_curveSteps; j++)
-   //    {
-   //       float u = i + (j / (float) _curveSteps);
-   //       root->addDrawable( calcTangentAt(u) );
-   //    }
+   //    printf("%d ", (*face_indices)[i]);
+   //    if((i+1)%4 == 0)
+   //       printf("\n");
    // }
 
+   osg::ref_ptr<osg::Geometry> cylinder_geom = new osg::Geometry;
+   cylinder_geom->setVertexArray( cylinder_verts.get() );
+
+   cylinder_geom->setVertexArray( cylinder_verts.get() );
+   cylinder_geom->setNormalArray( cylinder_normals.get() );
+   cylinder_geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
+   cylinder_geom->addPrimitiveSet( face_indices.get() );
+
+   // cylinder_geom->addPrimitiveSet(
+   //    new osg::DrawArrays(GL_POINTS, 0, cylinder_verts->getNumElements()) );
+
+   return cylinder_geom.release();
 }
 
-void NaturalCubicSpline::calcDoubleReflection(osg::ref_ptr<osg::Geode> root)
+osg::Geometry* NaturalCubicSpline::drawTangentCoordinateSystems()
 {
+
+   osg::Vec4 vec;               // Ortsvektor
    osg::Vec4 x_axis(1,0,0,1);
    osg::Vec4 y_axis(0,1,0,1);
    osg::Vec4 z_axis(0,0,1,1);
+   osg::Matrix mat;
+   
+   osg::ref_ptr<osg::Vec4Array>tangent_vertices = new osg::Vec4Array;
 
+   for(int i = 0; i < _vertices->getNumElements(); i++)
+   {
+      vec = osg::Vec4(
+         (*_vertices)[i].x(),
+         (*_vertices)[i].y(),
+         (*_vertices)[i].z(),
+         1
+         );
+
+      mat = _matrices[i];
+
+      tangent_vertices->push_back(vec);
+      tangent_vertices->push_back(mat*x_axis);
+
+      tangent_vertices->push_back(vec);
+      tangent_vertices->push_back(mat*y_axis);
+
+      tangent_vertices->push_back(vec);
+      tangent_vertices->push_back(mat*z_axis);
+   }
+
+   osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
+   tangent_geo->setVertexArray( tangent_vertices ); 
+   tangent_geo->addPrimitiveSet( 
+      new osg::DrawArrays(GL_LINES, 0, tangent_vertices->getNumElements()) );
+
+   return tangent_geo.release();
+}
+
+void NaturalCubicSpline::calcTangentCoordinateSystems(
+   osg::Vec3 x_axis,
+   osg::Vec3 y_axis,
+   osg::Vec3 z_axis)
+{
+   // Algorithmus = "Double Reflection" basierend auf dem Paper
+   // "Computation of Rotation Minimizing Frame in Computer Graphics"
    osg::ref_ptr<osg::Vec3Array> r = new osg::Vec3Array;
    osg::ref_ptr<osg::Vec3Array> s = new osg::Vec3Array;
 
-   // ersten Frame vorgeben
-   r->push_back( osg::Vec3(1,0,0) );
-   s->push_back( osg::Vec3(0,1,0) );
-   (*_tangents)[0] = osg::Vec3(0,0,1);
+   // ersten Frame/erstes Koordinatensystem vorgeben
+   r->push_back( x_axis );   // x
+   s->push_back( y_axis );   // y
+   (*_tangents)[0] = z_axis; // z
+
+   osg::Matrix mat(
+      (*r)[0].x(), (*s)[0].x(), (*_tangents)[0].x(), (*_vertices)[0].x(),
+      (*r)[0].y(), (*s)[0].y(), (*_tangents)[0].y(), (*_vertices)[0].y(),
+      (*r)[0].z(), (*s)[0].z(), (*_tangents)[0].z(), (*_vertices)[0].z(),
+      0,           0,          0,       1
+      );
+
+   _matrices.push_back(mat);
 
    for(int i = 0; i < _vertices->getNumElements()-1; i++)
    {
@@ -148,39 +259,14 @@ void NaturalCubicSpline::calcDoubleReflection(osg::ref_ptr<osg::Geode> root)
       r->push_back( osg::Vec3( rLi - v2 * (v2 * rLi) * (2/c2) ) );
       s->push_back( (*_tangents)[i+1] ^ (*r)[i+1] );
 
-      osg::Matrix mat(
+      mat = osg::Matrix(
          (*r)[i+1].x(), (*s)[i+1].x(), (*_tangents)[i+1].x(), (*_vertices)[i+1].x(),
          (*r)[i+1].y(), (*s)[i+1].y(), (*_tangents)[i+1].y(), (*_vertices)[i+1].y(),
          (*r)[i+1].z(), (*s)[i+1].z(), (*_tangents)[i+1].z(), (*_vertices)[i+1].z(),
          0,           0,          0,       1
          );
 
-      osg::Vec4 vec4 = osg::Vec4(
-         (*_vertices)[i+1].x(),
-         (*_vertices)[i+1].y(),
-         (*_vertices)[i+1].z(),
-         1
-         );
-
-      osg::ref_ptr<osg::Vec4Array>tangent_vertices = new osg::Vec4Array;
-
-      tangent_vertices->push_back(vec4);
-      tangent_vertices->push_back(mat*x_axis);
-
-      tangent_vertices->push_back(vec4);
-      tangent_vertices->push_back(mat*y_axis);
-
-      tangent_vertices->push_back(vec4);
-      tangent_vertices->push_back(mat*z_axis);
-
-      osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
-
-      tangent_geo->setVertexArray( tangent_vertices ); 
-      tangent_geo->addPrimitiveSet( 
-         new osg::DrawArrays(GL_LINES, 0, tangent_vertices->getNumElements()) );
-
-      root->addDrawable( tangent_geo );
-
+      _matrices.push_back(mat);
    }
 }
 
@@ -218,6 +304,8 @@ inline osg::Vec3 NaturalCubicSpline::calcAt(float t)
 
 void NaturalCubicSpline::calcSpline()
 {
+   calcPolynomialsXYZ();
+
    if(_vertices)
       _vertices.release();
    _vertices = new osg::Vec3Array;
@@ -236,6 +324,8 @@ void NaturalCubicSpline::calcSpline()
          _tangents->push_back( calcTangentAt(u) );
       }
    }
+
+   calcTangentCoordinateSystems();
 }
 
 osg::Geometry* NaturalCubicSpline::getPointSprites(osg::ref_ptr<osg::Geode> root)
