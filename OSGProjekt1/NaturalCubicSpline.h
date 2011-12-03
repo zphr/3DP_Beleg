@@ -2,6 +2,7 @@
 #include <osg/Geometry>
 #include <osg/Geode>
 #include "CubicPolynomial.h"
+#include "CircleCurve.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -24,7 +25,6 @@ class NaturalCubicSpline
         vector<CubicPolynomial> calcPolynomials(float *coords, int count);
         void calcSpline();
         osg::Geometry* drawSpline();
-        osg::Geometry* drawCylinderAlongSpline();
         inline osg::Vec3 calcAt(float t);
 
         osg::Geometry* drawTangentCoordinateSystems();
@@ -34,7 +34,7 @@ class NaturalCubicSpline
         osg::Vec3 calcTangentAt(float t);
         osg::Geometry* getPointSprites(osg::ref_ptr<osg::Geode> root);
 
-        osg::Geometry* drawExtrudedCylinder(unsigned int resolution=6, float scale=1.0f);
+        osg::Geometry* drawExtrudedCylinder(unsigned int resolution=3, float scale=1.0f);
 
         // Auflösung des Splines
         int _curveSteps;

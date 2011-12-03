@@ -20,12 +20,6 @@ using namespace std;
 #include <osg/BlendFunc>
 #include <osg/PolygonMode>
 
-struct PlantStack
-{
-   osg::Matrix rot_mat;
-   osg::Vec4 dist;
-};
-
 int main( int argc, char** argv)
 {
 
@@ -48,7 +42,7 @@ int main( int argc, char** argv)
    NaturalCubicSpline spline(points);
    root->addDrawable( spline.drawSpline() );
    // root->addDrawable( spline.getPointSprites(root) );
-   root->addDrawable( spline.drawExtrudedCylinder(12, 0.25f) );
+   root->addDrawable( spline.drawExtrudedCylinder(3, 0.25f) );
    // root->addDrawable( spline.drawTangentCoordinateSystems() );
 
    // map<char, string> rules;
