@@ -333,7 +333,8 @@ void LSysPlant::drawPlant(osg::ref_ptr<osg::Geode> &node)
                     (*_branches[i])[j].z());
         }
 
-        node->addDrawable(  NaturalCubicSpline(_branches[i])._geometry );
+        node->addDrawable(  NaturalCubicSpline(_branches[i]).drawExtrudedCylinder(6, 0.05f) );
+        //node->addDrawable(  NaturalCubicSpline(_branches[i]).drawSpline() );
     }
 
     /*node->addDrawable( line_loop.get() );*/

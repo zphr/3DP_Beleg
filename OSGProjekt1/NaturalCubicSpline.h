@@ -17,21 +17,26 @@ using namespace std;
 
 class NaturalCubicSpline
 {
+    private:
+         BaseCurve _extrudeShape;
     public:
-        NaturalCubicSpline(osg::ref_ptr<osg::Vec4Array> knots, int curveSteps=12);
+        NaturalCubicSpline(
+                osg::ref_ptr<osg::Vec4Array> knots,
+                int curveSteps=12,
+                BaseCurve extrudeShape=CircleCurve(3));
         ~NaturalCubicSpline();
 
         void calcPolynomialsXYZ();
         vector<CubicPolynomial> calcPolynomials(float *coords, int count);
         void calcSpline();
         osg::Geometry* drawSpline();
-        inline osg::Vec3 calcAt(float t);
+        inline osg::Vec3 calcAt(int i, float t);
 
         osg::Geometry* drawTangentCoordinateSystems();
         void calcTangentCoordinateSystems(osg::Vec3 x_axis = osg::Vec3(1,0,0),
                                           osg::Vec3 y_axis = osg::Vec3(0,1,0),
                                           osg::Vec3 z_axis = osg::Vec3(0,0,1));
-        osg::Vec3 calcTangentAt(float t);
+        osg::Vec3 calcTangentAt(int i, float t);
         osg::Geometry* getPointSprites(osg::ref_ptr<osg::Geode> root);
 
         osg::Geometry* drawExtrudedCylinder(unsigned int resolution=3, float scale=1.0f);

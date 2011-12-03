@@ -23,50 +23,61 @@ using namespace std;
 int main( int argc, char** argv)
 {
 
-   osg::ref_ptr<osg::Geode> root = new osg::Geode;
+    osg::ref_ptr<osg::Geode> root = new osg::Geode;
 
-   // osg::PolygonMode * polygonMode = new osg::PolygonMode;
-   // polygonMode->setMode( osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE );
-   // osg::StateSet* stateSet = root->getOrCreateStateSet();
-   // stateSet->setAttributeAndModes( polygonMode,
-   //                                 osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
+    // osg::PolygonMode * polygonMode = new osg::PolygonMode;
+    // polygonMode->setMode( osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE );
+    // osg::StateSet* stateSet = root->getOrCreateStateSet();
+    // stateSet->setAttributeAndModes( polygonMode,
+    //                                 osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
 
-   osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
-   points->push_back(osg::Vec4(1,15,0,1));
-   points->push_back(osg::Vec4(10,10,0,1));
-   // points->push_back(osg::Vec4(10,10,10,1));
-   points->push_back(osg::Vec4(20,0,0,1));
-   // points->push_back(osg::Vec4(8,1,0,1));
-   // points->push_back(osg::Vec4(4,0,-6,1));
+    //osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
+    //points->push_back(osg::Vec4(1,0,0,1));
+    //points->push_back(osg::Vec4(1,1,0,1));
+    //points->push_back(osg::Vec4(2,1,0,1));
+    //points->push_back(osg::Vec4(1,0,0,1));
+    //// points->push_back(osg::Vec4(10,10,10,1));
+    ////// points->push_back(osg::Vec4(8,1,0,1));
+    ////// points->push_back(osg::Vec4(4,0,-6,1));
 
-   NaturalCubicSpline spline(points);
-   root->addDrawable( spline.drawSpline() );
-   // root->addDrawable( spline.getPointSprites(root) );
-   root->addDrawable( spline.drawExtrudedCylinder(3, 0.25f) );
-   // root->addDrawable( spline.drawTangentCoordinateSystems() );
+    //NaturalCubicSpline spline(points);
+    //root->addDrawable( spline.drawSpline() );
+    //root->addDrawable( spline.getPointSprites(root) );
+    ////root->addDrawable( spline.drawExtrudedCylinder(3, 0.25f) );
+    //// root->addDrawable( spline.drawTangentCoordinateSystems() );
 
-   // map<char, string> rules;
-   // /*rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";*/
+    //osg::ref_ptr<osg::Vec4Array> points2 = new osg::Vec4Array;
+    //points2->push_back(osg::Vec4(2,0,0,1));
+    //points2->push_back(osg::Vec4(1,1,0,1));
+    //points2->push_back(osg::Vec4(2,1,0,1));
+    //points2->push_back(osg::Vec4(1,0,0,1));
 
-   // /*rules['A'] = "[&FLA]{{{{{[&FLA]{{{{{{[&FLA]";*/
-   // /*rules['F'] = "S{{{{F";*/
-   // /*rules['S'] = "F";*/
+    //NaturalCubicSpline spline2(points2);
+    //root->addDrawable( spline2.drawSpline() );
+    //root->addDrawable( spline2.getPointSprites(root) );
 
-   // rules['X'] = "F[[{X]&X]F[^}}(34.4)FX]&XF&F";
-   // rules['F'] = "FF";
+    map<char, string> rules;
+    //rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";
 
-   // //rules['X'] = "FF[&F]F";
+    //rules['A'] = "[&FLA]{{{{{[&FLA]{{{{{{[&FLA]";
+    //rules['F'] = "S{{{{F";
+    //rules['S'] = "F";
 
-   // float delta = 22.5;
-   // osg::Vec4 dist (0.0, 0.0, 0.5, 1.0);
-   // osg::Matrix rot_mat;
+     rules['X'] = "F[[{X]&X]F[^}}(34.4)FX]&XF&F";
+     rules['F'] = "FF";
 
-   // LSysPlant plant(2, delta, rules, rules['X'],  dist, rot_mat);
+    //rules['X'] = "FF[&F^{{F&F]FX";
 
-   // plant.drawPlant(root);
+    float delta = 22.5;
+    osg::Vec4 dist (0.0, 0.0, 0.5, 1.0);
+    osg::Matrix rot_mat;
 
-   osgViewer::Viewer viewer;
-   viewer.setSceneData( root.get() );
-   return viewer.run();
+    LSysPlant plant(2, delta, rules, rules['X'],  dist, rot_mat);
+
+    plant.drawPlant(root);
+
+    osgViewer::Viewer viewer;
+    viewer.setSceneData( root.get() );
+    return viewer.run();
 }
 

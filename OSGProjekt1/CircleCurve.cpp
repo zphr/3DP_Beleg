@@ -1,6 +1,6 @@
 #include "CircleCurve.h"
 
-CircleCurve::CircleCurve()
+CircleCurve::CircleCurve(int resolution):BaseCurve(resolution)
 {
 }
 
@@ -8,7 +8,7 @@ CircleCurve::~CircleCurve()
 {
 }
 
-osg::Vec4Array CircleCurve::calcPoints(unsigned int resolution)
+osg::Vec4Array* CircleCurve::calcPoints(unsigned int resolution)
 {
     float x, y;
     float PI_step = (2*M_PI)/(float)resolution;

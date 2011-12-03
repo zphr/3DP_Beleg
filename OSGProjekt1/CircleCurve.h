@@ -3,8 +3,8 @@
 class CircleCurve: public BaseCurve
 {
     public:
-         CircleCurve();
+         CircleCurve(int resolution=3);
          ~CircleCurve();
 
-         osg::Vec4Array calcPoints(unsigned int resolution);
-}
+         osg::Vec4Array* calcPoints(unsigned int resolution);
+};

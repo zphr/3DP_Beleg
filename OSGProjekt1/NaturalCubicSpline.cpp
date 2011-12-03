@@ -2,8 +2,9 @@
 
 NaturalCubicSpline::NaturalCubicSpline(
         osg::ref_ptr<osg::Vec4Array> knots,
-        int curveSteps)
-:  _knots(knots.get()), _curveSteps(curveSteps)
+        int curveSteps,
+        BaseCurve extrudeShape)
+:  _knots(knots.get()), _curveSteps(curveSteps), _extrudeShape(extrudeShape)
 {
     _geometry = new osg::Geometry;
     calcSpline();
@@ -45,22 +46,22 @@ vector<CubicPolynomial> NaturalCubicSpline::calcPolynomials(float *coords, int c
     float *delta = new float[count+1];
     float *derivative_result = new float[count+1];
 
-    gamma[0] = 1/2.0;
+    gamma[0] = 1.0/2.0;
     for(int i = 1; i < (count); i++)
     {
         gamma[i] = 1 / (4.0 - gamma[i-1]);
     }
     // das letzte gamma Element wird nur für die Ergebnisse (delta)
     // verwendet die mit diesem multipliziert werden
-    gamma[count] = 1 / (2.0 - gamma[count]);
+    gamma[count] = 1 / (2.0 - gamma[count-1]);
 
     // Dreiecksmatrix lösen -> Gauß-Verfahren
     delta[0] = 3*(coords[1] - coords[0]) * gamma[0];
     for(int i = 1; i < (count); i++)
     {
-        delta[i] = 3*(coords[i+1] - coords[i]) * gamma[i];
+        delta[i] = (3*(coords[i+1] - coords[i-1]) - delta[i-1]) * gamma[i];
     }
-    delta[count] = 3*(coords[count] - coords[count-1]) * gamma[count];
+    delta[count] = (3*(coords[count] - coords[count-1]) - delta[count-1]) * gamma[count];
 
     // rechte Seite der Matrix im Gauß-Verfahren berücksichtigen
     derivative_result[count] = delta[count];
@@ -91,14 +92,11 @@ vector<CubicPolynomial> NaturalCubicSpline::calcPolynomials(float *coords, int c
     return polynomials;
 }
 
-osg::Vec3 NaturalCubicSpline::calcTangentAt(float t)
+osg::Vec3 NaturalCubicSpline::calcTangentAt(int i, float t)
 {
-    int i = (int) t;
-    float u = t - i;
-
-    float tangent_x = _polynomialsX[i].firstDerivCalcAt(u);
-    float tangent_y = _polynomialsY[i].firstDerivCalcAt(u);
-    float tangent_z = _polynomialsZ[i].firstDerivCalcAt(u);
+    float tangent_x = _polynomialsX[i].firstDerivCalcAt(t);
+    float tangent_y = _polynomialsY[i].firstDerivCalcAt(t);
+    float tangent_z = _polynomialsZ[i].firstDerivCalcAt(t);
     osg::Vec3 tangent(tangent_x,tangent_y,tangent_z); // y
     tangent.normalize();
 
@@ -107,57 +105,52 @@ osg::Vec3 NaturalCubicSpline::calcTangentAt(float t)
 
 osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution, float scale)
 {
-    float x, y;
-    float PI_step = (2*M_PI)/(float)resolution;
-    float PI_2 =  2.0f*M_PI;
-
     unsigned int elements = _vertices->getNumElements();
     int k = 0;
 
-    osg::Vec4 circle_vert;
-    osg::ref_ptr<osg::Vec4Array> cylinder_verts = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec4Array> shape_verts = CircleCurve().calcPoints(resolution);
 
-    osg::Vec3 circle_normal;
-    osg::ref_ptr<osg::Vec3Array> cylinder_normals = new osg::Vec3Array;
+    osg::Vec4 vert;
+    osg::ref_ptr<osg::Vec4Array> verts = new osg::Vec4Array;
+
+    osg::Vec3 normal;
+    osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
 
     osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
 
     for(int i=0; i < elements; i++)
     {
-        k = 0;
-        for(float j=0; j <= (PI_2-PI_step); j+=PI_step, k++)
+        for(int j=0; j < shape_verts->getNumElements(); j++)
         {
-            x = cos(j);
-            y = sin(j);
 
-            circle_vert = osg::Vec4(x, y, 0, 1);
-            circle_vert *= scale;
-            circle_vert[3] = 1;
-            circle_vert = _matrices[i] * circle_vert;
+            vert = osg::Vec4((*shape_verts)[j]);
+            vert *= scale;
+            vert[3] = 1;
+            vert = _matrices[i] * vert;
 
-            cylinder_verts->push_back(circle_vert);
+            verts->push_back(vert);
 
-            circle_normal = osg::Vec3(circle_vert.x(), circle_vert.y(), circle_vert.z());
+            normal = osg::Vec3(vert.x(), vert.y(), vert.z());
             // Normalen müssen vom Ursprung aus angegeben werden
-            circle_normal -= (*_vertices)[i];
-            circle_normal.normalize();
-            cylinder_normals->push_back(circle_normal);
+            normal -= (*_vertices)[i];
+            normal.normalize();
+            normals->push_back(normal);
 
             if(i < (elements-1))
             {
-                if((i*resolution + k +1)%resolution != 0)
+                if((i*resolution + j +1)%resolution != 0)
                 {
-                    face_indices->push_back(i*resolution + k);
-                    face_indices->push_back(i*resolution + k +1);
-                    face_indices->push_back(i*resolution + k +resolution+1);
-                    face_indices->push_back(i*resolution + k +resolution);
+                    face_indices->push_back(i*resolution + j);
+                    face_indices->push_back(i*resolution + j +1);
+                    face_indices->push_back(i*resolution + j +resolution+1);
+                    face_indices->push_back(i*resolution + j +resolution);
                 }              
                 else           
                 {              
-                    face_indices->push_back(i*resolution + k );
-                    face_indices->push_back(i*resolution + k -(resolution-1));
-                    face_indices->push_back(i*resolution + k +1);            
-                    face_indices->push_back(i*resolution + k +resolution);
+                    face_indices->push_back(i*resolution + j);
+                    face_indices->push_back(i*resolution + j -(resolution-1));
+                    face_indices->push_back(i*resolution + j +1);            
+                    face_indices->push_back(i*resolution + j +resolution);
                 }
             }
         }
@@ -171,15 +164,15 @@ osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution,
     }
     
 
-    osg::ref_ptr<osg::Geometry> cylinder_geom = new osg::Geometry;
-    cylinder_geom->setVertexArray( cylinder_verts.get() );
+    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
+    geom->setVertexArray( verts.get() );
 
-    cylinder_geom->setVertexArray( cylinder_verts.get() );
-    cylinder_geom->setNormalArray( cylinder_normals.get() );
-    cylinder_geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
-    cylinder_geom->addPrimitiveSet( face_indices.get() );
+    geom->setVertexArray( verts.get() );
+    geom->setNormalArray( normals.get() );
+    geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
+    geom->addPrimitiveSet( face_indices.get() );
 
-    return cylinder_geom.release();
+    return geom.release();
 }
 
 osg::Geometry* NaturalCubicSpline::drawTangentCoordinateSystems()
@@ -283,14 +276,11 @@ osg::Geometry* NaturalCubicSpline::drawSpline()
     return _geometry.get();
 }
 
-inline osg::Vec3 NaturalCubicSpline::calcAt(float t)
+inline osg::Vec3 NaturalCubicSpline::calcAt(int i, float t)
 {
-    int i = (int) t;
-    float u = t - i;
-
-    float x = _polynomialsX[i].calcAt(u);
-    float y = _polynomialsY[i].calcAt(u);
-    float z = _polynomialsZ[i].calcAt(u);
+    float x = _polynomialsX[i].calcAt(t);
+    float y = _polynomialsY[i].calcAt(t);
+    float z = _polynomialsZ[i].calcAt(t);
 
     return osg::Vec3(x,y,z);
 }
@@ -307,14 +297,18 @@ void NaturalCubicSpline::calcSpline()
         _tangents.release();
     _tangents = new osg::Vec3Array;
 
+    _vertices->push_back( calcAt(0, 0) );
+    _tangents->push_back( calcTangentAt(0, 0) );
+
+    float u = 0.0f;
     for(int i=0; i < _knots->getNumElements()-1; i++)
     {
-        for(int j = 0; j <=_curveSteps-1; j++)
+        for(int j = 1; j <=_curveSteps; j++)
         {
-            float u = j / (float) _curveSteps;
-            u += i;
-            _vertices->push_back( calcAt(u) );
-            _tangents->push_back( calcTangentAt(u) );
+            u = j / (float) _curveSteps;
+            //u += i;
+            _vertices->push_back( calcAt(i, u) );
+            _tangents->push_back( calcTangentAt(i, u) );
         }
     }
 

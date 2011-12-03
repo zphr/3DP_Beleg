@@ -1,6 +1,7 @@
 *~
 *.~polynomials~
 *.cpp~
+*.swp
 *.h~
 
 /OSGProjekt1/LSysPlant.cpp~
