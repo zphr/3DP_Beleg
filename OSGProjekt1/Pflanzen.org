@@ -3,7 +3,7 @@
 * Ziele / Fragestellungen
   1. [X] Git Grundlagen lernen
   2. [X] CubicPolynomial-Klasse einbauen
-  3. [10/11] 3D-Stiele
+  3. [11/11] 3D-Stiele
      - [X] Stützpunkte des Splines zeichnen lassen
      - [X] Tangenten, Normalen, Birnormalen berechnen lassen + zeichnen
      - SHANI, U BALLARD, D "Splines as embeddings for generalized cylinders"
@@ -20,14 +20,14 @@
          richtig in der for-Schleifen ausgewertet wenn man den Wert
          davor berechnen lässt und einfach als Variable einsetzt gehts.
        - komisch, vielleicht wurde das vom Compiler kaputt optimiert 
-     - [ ] klappt das auch für alle Äste?
+     - [X] klappt das auch für alle Äste?
      - [X] Kreispunkte nicht ständig neu berechnen -> Entkopplung von
        Punktberechnung und Indizes-Bildung
        - [X] neue Kurven-Klasse
   4. [ ] sanfte Astgabelungen
      - [ ] erstmal wieder rausnehmen -> zufällige Generierung ist
        erstmal wichtiger (am Ende sieht man es eh nicht mehr so wenn
-       blätter dran sind)
+       Blätter dran sind)
   5. [ ] zufällige Generierung
   6. [ ] Jitter
   7. [ ] UV-Koordinaten

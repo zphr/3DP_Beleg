@@ -55,8 +55,7 @@ void LSysPlant::generatePlantWord()
                     // Funktion parsen 
                     if(word[j+1] == '(')
                     {
-                        para_end = getParanthesesContent(j+1, word);
-                        function_str = word.substr(j+1, para_end - j);
+                        function_str = getParanthesesContent(j+1, word, para_end);
                     }
                 }
 
@@ -87,47 +86,49 @@ void LSysPlant::generatePlantWord()
 
 void LSysPlant::generatePlant()
 {
-    osg::Vec4 vec;
-    osg::Vec4 mid_vec;
+    osg::Vec4 vec(0,0,0,1);
     osg::ref_ptr<osg::Vec4Array> branch_array = new osg::Vec4Array;
-    int branch = 0, new_branch = -1, index = 0, old_index = -1, new_i = 0;
+    int branch = 0, index = 0, old_index = -1, new_i = 0;
     string function_str = "";
     double f_result = 1.0;
     float angle = 0.0;
 
+    _branches[0]->push_back( vec );
+
     for(int i = 0; i < _startWord.length(); i++)
     {
-        // Funktionsergebnis zurücksetzen
+        // Funktionsergebnisse zurücksetzen
         f_result = 1.0;
         angle = _delta;
 
-        // Funktions Auswertung
+        // ---------------------------------------- Funktions Auswertung
+        // -------------------------------------------------------------
         if(i+1 < _startWord.length())
         {
             if(_startWord[i+1] == '(')
             {
-                int para_end = getParanthesesContent(i+1, _startWord);
-                function_str = _startWord.substr(i+1, para_end - i);
-                new_i = para_end;
+                function_str = getParanthesesContent(i+1, _startWord, new_i);
 
                 if(function_str != "")
                 {
                     _fparser.Parse(function_str, _variable);
                     double variables[1] = { 1.0 };
 
-                    if((_startWord[i] == '+') || (_startWord[i] == '-') ||
+                    if( // Funktion für die Rotations-Wörter auswerten
+                            (_startWord[i] == '+') || (_startWord[i] == '-') ||
                             (_startWord[i] == '&') || (_startWord[i] == '^') ||
-                            (_startWord[i] == '{') || (_startWord[i] == '}'))
+                            (_startWord[i] == '{') || (_startWord[i] == '}')
+                      )
                     {
                         variables[0] = _delta;
                         angle = _fparser.Eval(variables);
                     }
+                    // Funktion für die Translation auswerten
                     else if((_startWord[i] == 'F') || (_startWord[i] == 'F'))
                     {
                         variables[0] = _distanceVector.z();
                         f_result = _fparser.Eval(variables);
                     }
-
                 }
             }
         }
@@ -138,16 +139,6 @@ void LSysPlant::generatePlant()
                 {
                     vec += (_rotMatrix * (_distanceVector * (float)f_result));
                     vec[3] = 1.0;
-
-                    if(new_branch != -1)
-                    {
-                        osg::Vec4 branch_start = (*_branches[branch])[0];
-                        osg::Vec4 mid_new = ((vec - branch_start) / 4.0) + branch_start;
-                        mid_new += mid_vec;
-                        new_branch = -1;
-
-                        _branches[branch]->push_back( mid_new );
-                    }
 
                     _branches[branch]->push_back( vec );
                     _vertices->push_back( vec );
@@ -229,16 +220,8 @@ void LSysPlant::generatePlant()
                     osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
                     _branches.push_back( new_v4array );
 
-                    new_branch = _branches.size()-1;
-                    //_branches[new_branch]->push_back( (*_branches[branch])[_branches[branch]->getNumElements()-2] );
-
-                    _branches[new_branch]->push_back( vec );
-                    //_branches[new_branch]->push_back( mid_vec );
-
-                    if((*_branches[branch]).size() > 2)
-                        mid_vec = (vec - (*_branches[branch])[_branches[branch]->getNumElements()-2]) * 0.10;
-                     
-                    branch = new_branch;
+                    branch = _branches.size()-1;
+                    _branches[branch]->push_back( vec );
 
                     break;
                 }
@@ -293,7 +276,7 @@ inline void LSysPlant::RotMatZ(float angle, osg::Matrix &mat)
     mat = mRotationMatrix * mat;
 }
 
-int LSysPlant::getParanthesesContent(int str_pos, string str)
+string LSysPlant::getParanthesesContent(int str_pos, string str, int &para_end)
 {
     int para_count = 0;
     for(int i = str_pos; i < str.length(); i++)
@@ -304,11 +287,14 @@ int LSysPlant::getParanthesesContent(int str_pos, string str)
             para_count--;
 
         if(para_count == 0)
-            return i;
+        {
+            para_end = i;
+            return str.substr(str_pos+1, (i - str_pos)-1);
+        }
 
     }
     // TODO: echte Fehlermeldung/Exception ausgeben/auslösen!
-    return 0;
+    return "";
 }
 
 void LSysPlant::drawPlant(osg::ref_ptr<osg::Geode> &node)
@@ -322,18 +308,27 @@ void LSysPlant::drawPlant(osg::ref_ptr<osg::Geode> &node)
     osgUtil::SmoothingVisitor::smooth( *line_loop );
 
     vector<NaturalCubicSpline> branch_splines;
+    int element_count = 0;
 
     for(int i = 0; i < _branches.size(); i++)
     {
-        for(int j = 0; j < (*_branches[i]).getNumElements(); j++)
+        element_count = (*_branches[i]).getNumElements();
+        
+        if(element_count == 1)
         {
-            printf("%d %f %f %f\n", i, 
-                    (*_branches[i])[j].x(),
-                    (*_branches[i])[j].y(),
-                    (*_branches[i])[j].z());
+            printf("Branch %d had just 1 vertex!\n", i);
+            continue;
         }
 
-        node->addDrawable(  NaturalCubicSpline(_branches[i]).drawExtrudedCylinder(6, 0.05f) );
+        //for(int j = 0; j < element_count; j++)
+        //{
+            //printf("%d %f %f %f\n", i, 
+                    //(*_branches[i])[j].x(),
+                    //(*_branches[i])[j].y(),
+                    //(*_branches[i])[j].z());
+        //}
+
+        node->addDrawable(  NaturalCubicSpline(_branches[i],3).drawExtrudedCylinder(3, 0.05f) );
         //node->addDrawable(  NaturalCubicSpline(_branches[i]).drawSpline() );
     }
 

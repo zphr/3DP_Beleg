@@ -156,14 +156,13 @@ osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution,
         }
     }
 
-    for(int i=0; i<elements*4; i++)
-    {
-        printf("%d ", (*face_indices)[i]);
-        if((i+1)%4 == 0)
-            printf("\n");
-    }
+    //for(int i=0; i<elements*4; i++)
+    //{
+        //printf("%d ", (*face_indices)[i]);
+        //if((i+1)%4 == 0)
+            //printf("\n");
+    //}
     
-
     osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
     geom->setVertexArray( verts.get() );
 

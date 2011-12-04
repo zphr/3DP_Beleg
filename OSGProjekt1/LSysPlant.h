@@ -51,6 +51,6 @@ class LSysPlant
   inline void RotMatY(float angle, osg::Matrix &mat);
   inline void RotMatZ(float angle, osg::Matrix &mat);
   inline float DegToRad(float angle);
-  int getParanthesesContent(int str_pos, string str);
+  string getParanthesesContent(int str_pos, string str, int &para_end);
 };
 
