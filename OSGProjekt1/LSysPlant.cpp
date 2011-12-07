@@ -1,10 +1,4 @@
 #include "LSysPlant.h"
-#include "NaturalCubicSpline.h"
-#include "./fparser/fparser.hh"
-#include <iostream>
-#include <map>
-#include <string>
-#include <osgUtil/SmoothingVisitor>
 using namespace std;
 
 LSysPlant::LSysPlant(
@@ -23,6 +17,8 @@ LSysPlant::LSysPlant(
     _rotMatrix(rotMatrix),
     _variable(variable)
 {
+    _currentBranch = &_firstBranch;
+    
     osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
     _branches.push_back( new_v4array ); 
     _vertices = new osg::Vec4Array;
@@ -93,6 +89,9 @@ void LSysPlant::generatePlant()
     double f_result = 1.0;
     float angle = 0.0;
 
+    _firstBranch.addPoint( vec );
+    _currentBranch = &_firstBranch;
+
     _branches[0]->push_back( vec );
 
     for(int i = 0; i < _startWord.length(); i++)
@@ -140,6 +139,7 @@ void LSysPlant::generatePlant()
                     vec += (_rotMatrix * (_distanceVector * (float)f_result));
                     vec[3] = 1.0;
 
+                    _currentBranch->addPoint( vec );
                     _branches[branch]->push_back( vec );
                     _vertices->push_back( vec );
 
@@ -213,15 +213,26 @@ void LSysPlant::generatePlant()
                         new_item.old_index = index;
 
                     new_item.old_vec = vec;
-                    // push_back erstellt sowieso eine Kopie -> kein Grund neuen
-                    // Speicher zu allokieren!
-                    _stack.push_back(new_item);
 
                     osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
                     _branches.push_back( new_v4array );
 
                     branch = _branches.size()-1;
                     _branches[branch]->push_back( vec );
+
+                    // ---------------------------------------- Tree Version
+
+                    new_item.old_branch_node = _currentBranch;
+                    // Index des Vektors übergeben den Eltern- und
+                    // Kind-Ast gemeinsam haben
+                    _currentBranch = _currentBranch->addChild(
+                        _currentBranch->getKnotCount()-1, index);
+
+                    // ---------------------------------------- alter Stackkram
+
+                    // push_back erstellt sowieso eine Kopie -> kein Grund
+                    // neuen Speicher zu allokieren!
+                    _stack.push_back(new_item);
 
                     break;
                 }
@@ -233,6 +244,9 @@ void LSysPlant::generatePlant()
                     branch = _stack[size].old_branch;
                     old_index = _stack[size].old_index;
                     vec = _stack[size].old_vec;
+
+                    _currentBranch = _stack[size].old_branch_node;
+
                     _stack.pop_back();
 
                     break;
@@ -310,27 +324,29 @@ void LSysPlant::drawPlant(osg::ref_ptr<osg::Geode> &node)
     vector<NaturalCubicSpline> branch_splines;
     int element_count = 0;
 
-    for(int i = 0; i < _branches.size(); i++)
-    {
-        element_count = (*_branches[i]).getNumElements();
+    _firstBranch.calcBranches( node );
+    
+    // for(int i = 0; i < _branches.size(); i++)
+    // {
+    //     element_count = (*_branches[i]).getNumElements();
         
-        if(element_count == 1)
-        {
-            printf("Branch %d had just 1 vertex!\n", i);
-            continue;
-        }
+    //     if(element_count == 1)
+    //     {
+    //         //printf("Branch %d had just 1 vertex!\n", i);
+    //         continue;
+    //     }
 
-        //for(int j = 0; j < element_count; j++)
-        //{
-            //printf("%d %f %f %f\n", i, 
-                    //(*_branches[i])[j].x(),
-                    //(*_branches[i])[j].y(),
-                    //(*_branches[i])[j].z());
-        //}
+    //     //for(int j = 0; j < element_count; j++)
+    //     //{
+    //         //printf("%d %f %f %f\n", i, 
+    //                 //(*_branches[i])[j].x(),
+    //                 //(*_branches[i])[j].y(),
+    //                 //(*_branches[i])[j].z());
+    //     //}
 
-        node->addDrawable(  NaturalCubicSpline(_branches[i],3).drawExtrudedCylinder(3, 0.05f) );
-        //node->addDrawable(  NaturalCubicSpline(_branches[i]).drawSpline() );
-    }
+    //     node->addDrawable(  NaturalCubicSpline(_branches[i],3).drawExtrudedCylinder(3, 0.05f) );
+    //     //node->addDrawable(  NaturalCubicSpline(_branches[i]).drawSpline() );
+    // }
 
     /*node->addDrawable( line_loop.get() );*/
 }

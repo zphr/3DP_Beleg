@@ -1,12 +1,16 @@
 #include <iostream>
 #include <string>
+#include <map>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "./fparser/fparser.hh"
+#include "BranchNode.h"
+#include "NaturalCubicSpline.h"
 
 #include <osg/ShapeDrawable>
 #include <osg/Geometry>
 #include <osg/Geode>
+#include <osgUtil/SmoothingVisitor>
 #pragma once
 using namespace std;
 
@@ -16,6 +20,8 @@ struct PlantStackElement
   osg::Vec4 old_vec;
   osg::Matrix _rotMatrix;
   osg::Vec4 _distanceVector;
+
+  BranchNode* old_branch_node;
 };
 
 class LSysPlant
@@ -26,6 +32,8 @@ class LSysPlant
   map<char, string> _rules;
   string _startWord;
   string _variable;
+  BranchNode _firstBranch;
+  BranchNode* _currentBranch;
 
   osg::Vec4 _distanceVector;
   osg::Matrix _rotMatrix;

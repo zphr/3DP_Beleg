@@ -337,6 +337,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\BranchNode.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CircleCurve.cpp"
 				>
 			</File>
@@ -372,6 +376,10 @@
 			>
 			<File
 				RelativePath=".\BaseCurve.h"
+				>
+			</File>
+			<File
+				RelativePath=".\BranchNode.h"
 				>
 			</File>
 			<File

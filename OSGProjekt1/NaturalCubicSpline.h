@@ -19,12 +19,38 @@ class NaturalCubicSpline
 {
     private:
          BaseCurve _extrudeShape;
+
     public:
         NaturalCubicSpline(
+                int curveSteps=3,
+                BaseCurve extrudeShape=CircleCurve(3),
+                osg::Vec3 firstFrameX = osg::Vec3(1,0,0),
+                osg::Vec3 firstFrameY = osg::Vec3(0,1,0),
+                osg::Vec3 firstFrameZ = osg::Vec3(0,0,1));
+
+        NaturalCubicSpline(
                 osg::ref_ptr<osg::Vec4Array> knots,
-                int curveSteps=12,
-                BaseCurve extrudeShape=CircleCurve(3));
+                int curveSteps=3,
+                BaseCurve extrudeShape=CircleCurve(3),
+                osg::Vec3 firstFrameX = osg::Vec3(1,0,0),
+                osg::Vec3 firstFrameY = osg::Vec3(0,1,0),
+                osg::Vec3 firstFrameZ = osg::Vec3(0,0,1));
+
         ~NaturalCubicSpline();
+
+        void setFirstFrame(osg::ref_ptr<osg::Vec3Array> vecs);
+
+        void setFirstFrame(osg::Vec3 firstFrameX,
+                           osg::Vec3 firstFrameY,
+                           osg::Vec3 firstFrameZ);
+
+        void getFirstFrame(osg::Vec3 &firstFrameX,
+                           osg::Vec3 &firstFrameY,
+                           osg::Vec3 &firstFrameZ);
+        inline osg::Matrix getKnotFrame(int n);
+        osg::Vec3Array* getKnotFrameVectors(int n);
+
+        void setKnots(osg::Vec4Array* knots);
 
         void calcPolynomialsXYZ();
         vector<CubicPolynomial> calcPolynomials(float *coords, int count);
@@ -32,10 +58,8 @@ class NaturalCubicSpline
         osg::Geometry* drawSpline();
         inline osg::Vec3 calcAt(int i, float t);
 
-        osg::Geometry* drawTangentCoordinateSystems();
-        void calcTangentCoordinateSystems(osg::Vec3 x_axis = osg::Vec3(1,0,0),
-                                          osg::Vec3 y_axis = osg::Vec3(0,1,0),
-                                          osg::Vec3 z_axis = osg::Vec3(0,0,1));
+        osg::Geometry* drawTangentFrames();
+        void calcTangentFrames();
         osg::Vec3 calcTangentAt(int i, float t);
         osg::Geometry* getPointSprites(osg::ref_ptr<osg::Geode> root);
 
@@ -57,4 +81,7 @@ class NaturalCubicSpline
         osg::ref_ptr<osg::Geometry> _geometry;
         osg::ref_ptr<osg::Geometry> _tangentCoordinateSysGeo;
 
+        osg::Vec3 _firstFrameX;
+        osg::Vec3 _firstFrameY;
+        osg::Vec3 _firstFrameZ;
 };

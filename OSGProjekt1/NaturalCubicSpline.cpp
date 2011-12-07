@@ -1,11 +1,33 @@
 #include "NaturalCubicSpline.h"
 
 NaturalCubicSpline::NaturalCubicSpline(
+        int curveSteps,
+        BaseCurve extrudeShape,
+        osg::Vec3 firstFrameX,
+        osg::Vec3 firstFrameY,
+        osg::Vec3 firstFrameZ)
+:  _curveSteps(curveSteps), _extrudeShape(extrudeShape)
+{
+    _firstFrameX = firstFrameX;
+    _firstFrameY = firstFrameY;
+    _firstFrameZ = firstFrameZ;
+
+    _geometry = new osg::Geometry;
+}
+
+NaturalCubicSpline::NaturalCubicSpline(
         osg::ref_ptr<osg::Vec4Array> knots,
         int curveSteps,
-        BaseCurve extrudeShape)
+        BaseCurve extrudeShape,
+        osg::Vec3 firstFrameX,
+        osg::Vec3 firstFrameY,
+        osg::Vec3 firstFrameZ)
 :  _knots(knots.get()), _curveSteps(curveSteps), _extrudeShape(extrudeShape)
 {
+    _firstFrameX = firstFrameX;
+    _firstFrameY = firstFrameY;
+    _firstFrameZ = firstFrameZ;
+    
     _geometry = new osg::Geometry;
     calcSpline();
 }
@@ -14,6 +36,71 @@ NaturalCubicSpline::~NaturalCubicSpline()
 {
     _vertices.release();
     _tangents.release();
+}
+
+void NaturalCubicSpline::getFirstFrame(osg::Vec3 &firstFrameX,
+                                       osg::Vec3 &firstFrameY,
+                                       osg::Vec3 &firstFrameZ)
+{
+    firstFrameX = _firstFrameX;
+    firstFrameY = _firstFrameY;
+    firstFrameZ = _firstFrameZ;
+}
+
+void NaturalCubicSpline::setFirstFrame(osg::ref_ptr<osg::Vec3Array> vecs)
+{
+    _firstFrameX = (*vecs)[0];
+    _firstFrameY = (*vecs)[1];
+    _firstFrameZ = (*vecs)[2];
+}
+
+void NaturalCubicSpline::setFirstFrame(osg::Vec3 firstFrameX,
+                                       osg::Vec3 firstFrameY,
+                                       osg::Vec3 firstFrameZ)
+{
+    _firstFrameX = firstFrameX;
+    _firstFrameY = firstFrameY;
+    _firstFrameZ = firstFrameZ;
+}
+
+inline osg::Matrix NaturalCubicSpline::getKnotFrame(int n)
+{
+    if(n >= _matrices.size())
+         return osg::Matrix();
+    else
+         return _matrices[_curveSteps * n];
+}
+
+osg::Vec3Array* NaturalCubicSpline::getKnotFrameVectors(int n)
+{
+    this;
+
+    osg::ref_ptr<osg::Vec3Array> vec_array = new osg::Vec3Array;
+    
+    if(n >= _matrices.size())
+    {
+        vec_array->push_back(osg::Vec3(1,0,0));
+        vec_array->push_back(osg::Vec3(0,1,0));
+        vec_array->push_back(osg::Vec3(0,0,1));
+    }
+    else
+    {
+        osg::Matrix mat = _matrices[_curveSteps * n];
+                 
+        vec_array->push_back(osg::Vec3(mat(0,0), mat(1,0), mat(2,0))); // X-Achse
+        vec_array->push_back(osg::Vec3(mat(0,1), mat(1,1), mat(2,1))); // Y-Achse
+        vec_array->push_back(osg::Vec3(mat(0,2), mat(1,2), mat(2,2))); // Z-Achse
+    }
+
+    return vec_array.release();
+}
+
+void NaturalCubicSpline::setKnots(osg::Vec4Array* knots)
+{
+    // TODO: hier wird doch sicherlich nur der Pointer übergeben ->
+    // könnte Probleme geben, allerdings sind dann die Daten auch
+    // neu...
+    _knots = knots;
 }
 
 void NaturalCubicSpline::calcPolynomialsXYZ()
@@ -105,6 +192,11 @@ osg::Vec3 NaturalCubicSpline::calcTangentAt(int i, float t)
 
 osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution, float scale)
 {
+    // wenn die Basisdaten noch nicht berechnet wurden dann sollte man
+    // das mal anstoßen
+    if((_vertices == 0) || (_matrices.size() == 0))
+         calcSpline();
+    
     unsigned int elements = _vertices->getNumElements();
     int k = 0;
 
@@ -174,7 +266,7 @@ osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution,
     return geom.release();
 }
 
-osg::Geometry* NaturalCubicSpline::drawTangentCoordinateSystems()
+osg::Geometry* NaturalCubicSpline::drawTangentFrames()
 {
     osg::Vec4 vec;               // Ortsvektor
     osg::Vec4 x_axis(1,0,0,1);
@@ -184,7 +276,7 @@ osg::Geometry* NaturalCubicSpline::drawTangentCoordinateSystems()
 
     osg::ref_ptr<osg::Vec4Array>tangent_vertices = new osg::Vec4Array;
 
-    for(int i = 0; i < _vertices->getNumElements(); i++)
+    for(int i = 0; i < _matrices.size(); i++)
     {
         vec = osg::Vec4(
                 (*_vertices)[i].x(),
@@ -213,18 +305,15 @@ osg::Geometry* NaturalCubicSpline::drawTangentCoordinateSystems()
     return tangent_geo.release();
 }
 
-void NaturalCubicSpline::calcTangentCoordinateSystems(
-        osg::Vec3 x_axis,
-        osg::Vec3 y_axis,
-        osg::Vec3 z_axis)
+void NaturalCubicSpline::calcTangentFrames()
 {
     osg::ref_ptr<osg::Vec3Array> r = new osg::Vec3Array;
     osg::ref_ptr<osg::Vec3Array> s = new osg::Vec3Array;
 
     // ersten Frame/erstes Koordinatensystem vorgeben
-    r->push_back( x_axis );   // x
-    s->push_back( y_axis );   // y
-    (*_tangents)[0] = z_axis; // z
+    r->push_back( _firstFrameX );   // x
+    s->push_back( _firstFrameY );   // y
+    (*_tangents)[0] = _firstFrameZ; // z
 
     osg::Matrix mat(
             (*r)[0].x(), (*s)[0].x(), (*_tangents)[0].x(), (*_vertices)[0].x(),
@@ -311,7 +400,7 @@ void NaturalCubicSpline::calcSpline()
         }
     }
 
-    calcTangentCoordinateSystems();
+    calcTangentFrames();
 }
 
 osg::Geometry* NaturalCubicSpline::getPointSprites(osg::ref_ptr<osg::Geode> root)

@@ -57,7 +57,7 @@ int main( int argc, char** argv)
     //root->addDrawable( spline2.getPointSprites(root) );
 
     map<char, string> rules;
-    rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]F(0.25)";
+    //rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]F(0.25)";
 
     //rules['A'] = "SS[&FLA]{{&{{&{[&FLA]{{&{[&FLA]";
     //rules['F'] = "S{{{{F";
@@ -66,13 +66,13 @@ int main( int argc, char** argv)
      //rules['X'] = "F[[{F]&X]F[^}}(34.4)FX]&XF&F";
      //rules['F'] = "fF";
 
-    //rules['X'] = "FF[&F^{{F&F]FX";
+    rules['F'] = "FF[^F[^F]][^F]F";
 
     float delta = 45.5;
     osg::Vec4 dist (0.0, 0.0, 1.0, 1.0);
     osg::Matrix rot_mat;
 
-    LSysPlant plant(5, delta, rules, rules['A'],  dist, rot_mat);
+    LSysPlant plant(0, delta, rules, rules['F'],  dist, rot_mat);
 
     plant.drawPlant(root);
 
