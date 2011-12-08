@@ -3,6 +3,7 @@
 #include <osg/Geode>
 #include "NaturalCubicSpline.h"
 #include <iostream>
+#include <deque>
 #pragma once
 using namespace std;
 
@@ -15,16 +16,17 @@ class BranchNode
         BranchNode(BranchNode* parentBranch, osg::ref_ptr<osg::Vec4Array> knots);
         ~BranchNode();
 
-        inline BranchNode* getParentBranch();
+        BranchNode* getParentBranch();
         void addPoint(osg::Vec4 new_point);
         BranchNode* addChild(int index, int i);
         void traverseChildNodes();
         void traverseChildNodesPerLevel(int level=-1);
-        vector<vector<BranchNode>*> getChildrenPerLevel(int level=-1);
+        vector<vector<BranchNode*>*> getChildrenPerLevel(int level=-1);
         inline int getChildrenCount();
         inline BranchNode* getChild(unsigned int n);
-        inline vector<BranchNode>* getChildrenPtr();
+        inline vector<BranchNode*>* getChildrenPtr();
         void calcBranches(osg::ref_ptr<osg::Geode> geode);
+        void deleteLastChild();
 
         inline osg::Matrix getKnotFrame(int n);
         int getKnotCount();
@@ -34,15 +36,18 @@ class BranchNode
         inline osg::Geometry* getGeometry();
         osg::Geometry* calcBranch();
 
+        int _index;
+
     private:
         BranchNode* _parentBranch;
-        vector<BranchNode> _branchChildren;
+        BranchNode* _this;
+        vector<BranchNode*> _branchChildren;
 
         NaturalCubicSpline _spline;
         osg::ref_ptr<osg::Vec4Array> _knots;
 
         int _firstKnotParentIndex;
-        int _index;
+
 
         osg::ref_ptr<osg::Geometry> _geom;
 };

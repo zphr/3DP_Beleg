@@ -10,6 +10,7 @@ BranchNode::BranchNode()
     _geom = new osg::Geometry;
 
     _index = 0;
+    _this = this;
 }
 
 BranchNode::BranchNode(int firstKnotParentIndex)
@@ -18,7 +19,10 @@ BranchNode::BranchNode(int firstKnotParentIndex)
     _parentBranch = 0;
     _knots = new osg::Vec4Array;
 
-    _geom = new osg::Geometry;}
+    _geom = new osg::Geometry;
+
+    _this = this;
+}
 
 BranchNode::BranchNode(BranchNode* parentBranch, osg::Vec4 start_knot, int firstKnotParentIndex, int index)
 {
@@ -30,6 +34,7 @@ BranchNode::BranchNode(BranchNode* parentBranch, osg::Vec4 start_knot, int first
     _geom = new osg::Geometry;
 
     _index = index;
+    _this = this;
 }
 
 BranchNode::BranchNode(BranchNode* parentBranch, osg::ref_ptr<osg::Vec4Array> knots)
@@ -38,6 +43,7 @@ BranchNode::BranchNode(BranchNode* parentBranch, osg::ref_ptr<osg::Vec4Array> kn
     _knots = new osg::Vec4Array( (*knots) );
 
     _geom = new osg::Geometry;
+    _this = this;
 }
 
 BranchNode::~BranchNode()
@@ -47,9 +53,16 @@ BranchNode::~BranchNode()
 
     if(_geom)
         _geom.release();
+    
 }
 
-inline BranchNode* BranchNode::getParentBranch()
+void BranchNode::deleteLastChild()
+{
+    delete _branchChildren.back();
+    _branchChildren.pop_back();
+}
+
+BranchNode* BranchNode::getParentBranch()
 {
     return _parentBranch;
 }
@@ -62,8 +75,9 @@ void BranchNode::addPoint(osg::Vec4 new_point)
 BranchNode* BranchNode::addChild(int index, int i)
 {
     osg::Vec4 branching_knot = (*_knots)[_knots->getNumElements()-1];
-    _branchChildren.push_back( BranchNode(this, branching_knot, index, i) );
-    return &(_branchChildren[_branchChildren.size()-1]);
+
+    _branchChildren.push_back( new BranchNode(this, branching_knot, index, i) );
+    return (_branchChildren[_branchChildren.size()-1]);
 }
 
 inline int BranchNode::getChildrenCount()
@@ -74,7 +88,7 @@ inline int BranchNode::getChildrenCount()
 inline BranchNode* BranchNode::getChild(unsigned int n)
 {
     if( n < (_branchChildren.size()) )
-         return &(_branchChildren[n]);
+         return _branchChildren[n];
     else 
          return 0;
 }
@@ -87,88 +101,88 @@ struct BranchStElement
 
 void BranchNode::traverseChildNodes()
 {
-    if(_branchChildren.size() == 0)
-         return;
+    // if(_branchChildren.size() == 0)
+    //      return;
 
-    vector<BranchStElement> node_stack;
-    BranchNode* curr_branch_child = this;
-    BranchStElement stack_element;
+    // vector<BranchStElement> node_stack;
+    // BranchNode* curr_branch_child = this;
+    // BranchStElement stack_element;
     
-    int children_count = 0, i = 0;
+    // int children_count = 0, i = 0;
 
-    do
-    {
-        if(( node_stack.size() != 0 ) && (curr_branch_child == 0))
-        {
-            BranchStElement last_stack_element;
-            last_stack_element = node_stack[node_stack.size()-1];
-            i = last_stack_element.position;
-            curr_branch_child = last_stack_element.branch_ptr;
+    // do
+    // {
+    //     if(( node_stack.size() != 0 ) && (curr_branch_child == 0))
+    //     {
+    //         BranchStElement last_stack_element;
+    //         last_stack_element = node_stack[node_stack.size()-1];
+    //         i = last_stack_element.position;
+    //         curr_branch_child = last_stack_element.branch_ptr;
 
-            if(curr_branch_child->getChildrenCount() < (i+1))
-                 node_stack.pop_back();
-            else
-                 node_stack[node_stack.size()-1].position += 1;
+    //         if(curr_branch_child->getChildrenCount() < (i+1))
+    //              node_stack.pop_back();
+    //         else
+    //              node_stack[node_stack.size()-1].position += 1;
             
-            curr_branch_child = last_stack_element.branch_ptr->getChild(i);
-            i = 0;
-            continue;
-        }
+    //         curr_branch_child = last_stack_element.branch_ptr->getChild(i);
+    //         i = 0;
+    //         continue;
+    //     }
 
-        if(curr_branch_child->getChildrenCount())
-        {
-            if(curr_branch_child->getChildrenCount() > (i+1))
-            {
-                BranchStElement new_stack_element;
-                new_stack_element.branch_ptr = curr_branch_child;
-                new_stack_element.position = i+1;
-                node_stack.push_back( new_stack_element );
-            }
-            curr_branch_child = curr_branch_child->getChild(i);
-        }
-        else
-             curr_branch_child = 0;
+    //     if(curr_branch_child->getChildrenCount())
+    //     {
+    //         if(curr_branch_child->getChildrenCount() > (i+1))
+    //         {
+    //             BranchStElement new_stack_element;
+    //             new_stack_element.branch_ptr = curr_branch_child;
+    //             new_stack_element.position = i+1;
+    //             node_stack.push_back( new_stack_element );
+    //         }
+    //         curr_branch_child = curr_branch_child->getChild(i);
+    //     }
+    //     else
+    //          curr_branch_child = 0;
         
-    }while(( node_stack.size() != 0) || (curr_branch_child != 0));
+    // }while(( node_stack.size() != 0) || (curr_branch_child != 0));
 
 }
 
-inline vector<BranchNode>* BranchNode::getChildrenPtr()
+inline vector<BranchNode*>* BranchNode::getChildrenPtr()
 {
     return &_branchChildren;
 }
 
 void BranchNode::traverseChildNodesPerLevel(int level)
 {
-    vector<vector<BranchNode>*> curr_children;
-    curr_children.push_back(&_branchChildren);
-    int l = 0;
-    level > 0 ? l = 0 : l = -2;
+    // vector<vector<BranchNode*>*> curr_children;
+    // curr_children.push_back(&_branchChildren);
+    // int l = 0;
+    // level > 0 ? l = 0 : l = -2;
     
-    while(curr_children.size() && (l < level))
-    {
-        vector<vector<BranchNode>*> new_curr_children;
+    // while(curr_children.size() && (l < level))
+    // {
+    //     vector<vector<BranchNode*>*> new_curr_children;
         
-        // Ausführen
-        for(int i=0; i < curr_children.size(); i++)
-        {
-            for(int j=0; j < curr_children[i]->size(); j++)
-            {
-                // Kinder der nächsten Ebene sammeln
-                if((*(curr_children[i]))[j].getChildrenPtr())
-                     new_curr_children.push_back( (*(curr_children[i]))[j].getChildrenPtr() );
-            }
-        }
+    //     // Ausführen
+    //     for(int i=0; i < curr_children.size(); i++)
+    //     {
+    //         for(int j=0; j < (*curr_children[i])->size(); j++)
+    //         {
+    //             // Kinder der nächsten Ebene sammeln
+    //             if((*(*(curr_children[i])))[j].getChildrenPtr())
+    //                  new_curr_children.push_back( (*(*(curr_children[i])))[j].getChildrenPtr() );
+    //         }
+    //     }
 
-        level > 0 ? l++ : l = -2;
-        curr_children = new_curr_children;
-    }
+    //     level > 0 ? l++ : l = -2;
+    //     curr_children = new_curr_children;
+    // }
 
 }
 
-vector<vector<BranchNode>*> BranchNode::getChildrenPerLevel(int level)
+vector<vector<BranchNode*>*> BranchNode::getChildrenPerLevel(int level)
 {
-    vector<vector<BranchNode>*> curr_children;
+    vector<vector<BranchNode*>*> curr_children;
     curr_children.push_back(&_branchChildren);
     int l = 0, old_size = 0;
 
@@ -182,11 +196,11 @@ vector<vector<BranchNode>*> BranchNode::getChildrenPerLevel(int level)
         for(int i=0; i < curr_children.size(); i++)
         {
             
-            for(int j=0; j < curr_children[i]->size(); j++)
+            for(int j=0; j < (curr_children[i])->size(); j++)
             {
                 // Kinder der nächsten Ebene sammeln
-                if((*(curr_children[i]))[j].getChildrenCount())
-                     curr_children.push_back( (*(curr_children[i]))[j].getChildrenPtr() );
+                if( (*(curr_children[i]))[j]->getChildrenCount() )
+                     curr_children.push_back( (*(curr_children[i]))[j]->getChildrenPtr() );
             }
         }
         level > 0 ? l++ : l = -2;
@@ -217,7 +231,7 @@ osg::Geometry* BranchNode::calcBranch()
 {
     _spline.setKnots( _knots.get() );
 
-    cout << _firstKnotParentIndex << endl;
+    // cout << _firstKnotParentIndex << endl;
     if(_parentBranch)
     {
         _spline.setFirstFrame(
@@ -233,16 +247,16 @@ osg::Geometry* BranchNode::calcBranch()
 
 void BranchNode::calcBranches(osg::ref_ptr<osg::Geode> geode)
 {
-    vector<vector<BranchNode>*> curr_children = getChildrenPerLevel();
+    vector<vector<BranchNode*>*> curr_children = getChildrenPerLevel();
 
     geode->addDrawable(calcBranch());
 
     for(int i=0; i < curr_children.size(); i++)
     {
-        for(int j=0; j < curr_children[i]->size(); j++)
+        for(int j=0; j < (*(curr_children[i])).size(); j++)
         {
             geode->addDrawable(
-                (*(curr_children[i]))[j].calcBranch()
+                (*(curr_children[i]))[j]->calcBranch()
             );
         }
     }

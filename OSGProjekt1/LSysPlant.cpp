@@ -32,6 +32,17 @@ LSysPlant::~LSysPlant(void)
         _branches[i].release();
 
     _vertices.release();
+
+    vector<vector<BranchNode*>*> curr_children = _firstBranch.getChildrenPerLevel();
+
+    for(int i=0; i < curr_children.size(); i++)
+    {
+        for(int j=0; j < (*(curr_children[i])).size(); j++)
+        {
+            delete (*(curr_children[i]))[j];
+        }
+    }
+
 }
 
 void LSysPlant::generatePlantWord()
@@ -245,8 +256,16 @@ void LSysPlant::generatePlant()
                     old_index = _stack[size].old_index;
                     vec = _stack[size].old_vec;
 
-                    _currentBranch = _stack[size].old_branch_node;
+                    // wenn der aktuelle Ast nur 1 oder 0 Knoten hat
+                    // dann muss er gelöscht werden
+                    if( _currentBranch->getKnotCount() <= 1)
+                    {
+                        BranchNode* parent_branch = _currentBranch->getParentBranch();
+                        parent_branch->deleteLastChild();
+                    }
 
+                    _currentBranch = _stack[size].old_branch_node;
+                    
                     _stack.pop_back();
 
                     break;
