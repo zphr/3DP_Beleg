@@ -25,22 +25,23 @@ int main( int argc, char** argv)
 
     osg::ref_ptr<osg::Geode> root = new osg::Geode;
 
-    // osg::PolygonMode * polygonMode = new osg::PolygonMode;
-    // polygonMode->setMode( osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE );
-    // osg::StateSet* stateSet = root->getOrCreateStateSet();
-    // stateSet->setAttributeAndModes( polygonMode,
-    //                                 osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
+    osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
+    profile_points->push_back(osg::Vec4(0,0.25,0,1));
+    profile_points->push_back(osg::Vec4(0.25,0.75,0,1));
+    profile_points->push_back(osg::Vec4(0.9,0.25,0,1));
+    profile_points->push_back(osg::Vec4(1,.5,0,1));
 
-    //osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
-    //points->push_back(osg::Vec4(1,0,0,1));
-    //points->push_back(osg::Vec4(1,1,0,1));
-    //points->push_back(osg::Vec4(2,1,0,1));
-    //points->push_back(osg::Vec4(1,0,0,1));
-    //// points->push_back(osg::Vec4(10,10,10,1));
-    ////// points->push_back(osg::Vec4(8,1,0,1));
-    ////// points->push_back(osg::Vec4(4,0,-6,1));
+    NaturalCubicSpline profile_spline(profile_points);
+    root->addDrawable( profile_spline.drawSpline() );
 
-    //NaturalCubicSpline spline(points);
+    osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
+    points->push_back(osg::Vec4(1,0,0,1));
+    points->push_back(osg::Vec4(1,0,1,1));
+    points->push_back(osg::Vec4(2,0,1,1));
+
+    NaturalCubicSpline spline(points, 6, CircleCurve(7), &profile_spline);
+    root->addDrawable( spline.drawExtrudedCylinder(12, 0.25f) );
+
     //root->addDrawable( spline.drawSpline() );
     //root->addDrawable( spline.getPointSprites(root) );
     ////root->addDrawable( spline.drawExtrudedCylinder(3, 0.25f) );
@@ -56,11 +57,10 @@ int main( int argc, char** argv)
     //root->addDrawable( spline2.drawSpline() );
     //root->addDrawable( spline2.getPointSprites(root) );
 
-    map<char, string> rules;
-    rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";
+    // map<char, string> rules;
+    // rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";
     
     // rules['A'] = "F[&(x/1.456)A(x/1.456)]";
-
 
     // rules['A'] = "SS[&FLA]{{&{{&{[&FLA]{{&{[&FLA]";
     // rules['F'] = "S{{{{F";
@@ -73,13 +73,13 @@ int main( int argc, char** argv)
 
     // rules['F'] = "FF[&+(45)FF][&+(90)FF][&+(180)FF]";
 
-    float delta = 45.0;
-    osg::Vec4 dist (0.0, 0.0, 1.0, 1.0);
-    osg::Matrix rot_mat;
+    // float delta = 45.0;
+    // osg::Vec4 dist (0.0, 0.0, 1.0, 1.0);
+    // osg::Matrix rot_mat;
 
-    LSysPlant plant(3, delta, rules, rules['A'],  dist, rot_mat);
+    // LSysPlant plant(4, delta, rules, rules['A'],  dist, rot_mat);
 
-    plant.drawPlant(root);
+    // plant.drawPlant(root);
 
     osgViewer::Viewer viewer;
     viewer.setSceneData( root.get() );

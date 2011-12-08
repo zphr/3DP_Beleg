@@ -17,8 +17,6 @@ LSysPlant::LSysPlant(
     _rotMatrix(rotMatrix),
     _variable(variable)
 {
-    _currentBranch = &_firstBranch;
-    
     osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
     _branches.push_back( new_v4array ); 
     _vertices = new osg::Vec4Array;
@@ -100,8 +98,8 @@ void LSysPlant::generatePlant()
     double f_result = 1.0;
     float angle = 0.0;
 
-    _firstBranch.addPoint( vec );
-    _currentBranch = &_firstBranch;
+    _firstBranch.addKnot( vec );
+    BranchNode* currentBranch = &_firstBranch;
 
     _branches[0]->push_back( vec );
 
@@ -150,20 +148,7 @@ void LSysPlant::generatePlant()
                     vec += (_rotMatrix * (_distanceVector * (float)f_result));
                     vec[3] = 1.0;
 
-                    _currentBranch->addPoint( vec );
-                    _branches[branch]->push_back( vec );
-                    _vertices->push_back( vec );
-
-                    // Indizes 
-                    if(old_index != -1)
-                    {
-                        _indices->push_back( old_index );
-                        old_index = -1;
-                    }
-                    else
-                        _indices->push_back( index );
-
-                    _indices->push_back( ++index );
+                    currentBranch->addKnot( vec );
 
                     break;
                 }
@@ -209,67 +194,48 @@ void LSysPlant::generatePlant()
                     RotMatY(180.0, _rotMatrix);
                     break;
                 }
+            // Stack Push 
             case '[':
-                {
-                    struct PlantStackElement new_item;
-                    new_item._rotMatrix = _rotMatrix;
-                    new_item._distanceVector = _distanceVector;
-                    new_item.old_branch = branch;
+            {
+                struct PlantStackElement new_item;
+                new_item._posVector      = vec;
+                new_item._rotMatrix      = _rotMatrix;
+                new_item._distanceVector = _distanceVector;
+                
+                // ---------------------------------------- Tree Version
 
-                    if(old_index != -1)
-                    {
-                        new_item.old_index = old_index;
-                    }
-                    else
-                        new_item.old_index = index;
+                new_item._parentBranch = currentBranch;
+                // Index des Vektors übergeben den Eltern- und
+                // Kind-Ast gemeinsam haben
+                currentBranch = currentBranch->addChild(
+                    currentBranch->getKnotCount()-1, index);
 
-                    new_item.old_vec = vec;
 
-                    osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
-                    _branches.push_back( new_v4array );
-
-                    branch = _branches.size()-1;
-                    _branches[branch]->push_back( vec );
-
-                    // ---------------------------------------- Tree Version
-
-                    new_item.old_branch_node = _currentBranch;
-                    // Index des Vektors übergeben den Eltern- und
-                    // Kind-Ast gemeinsam haben
-                    _currentBranch = _currentBranch->addChild(
-                        _currentBranch->getKnotCount()-1, index);
-
-                    // ---------------------------------------- alter Stackkram
-
-                    // push_back erstellt sowieso eine Kopie -> kein Grund
-                    // neuen Speicher zu allokieren!
-                    _stack.push_back(new_item);
-
-                    break;
-                }
+                _stack.push_back(new_item);
+                break;
+            }
+            // Stack Pop
             case ']':
+            {
+                int size        = _stack.size()-1;
+                vec             = _stack[size]._posVector; // vorherige Position
+                _rotMatrix      = _stack[size]._rotMatrix; // vorherige Rotation
+                _distanceVector = _stack[size]._distanceVector; // vorheriger Richtungsvektor
+
+                // wenn der aktuelle Ast nur 1 oder 0 Knoten hat
+                // dann muss er gelöscht werden
+                if( currentBranch->getKnotCount() <= 1)
                 {
-                    int size = _stack.size()-1;
-                    _distanceVector = _stack[size]._distanceVector;
-                    _rotMatrix = _stack[size]._rotMatrix;
-                    branch = _stack[size].old_branch;
-                    old_index = _stack[size].old_index;
-                    vec = _stack[size].old_vec;
-
-                    // wenn der aktuelle Ast nur 1 oder 0 Knoten hat
-                    // dann muss er gelöscht werden
-                    if( _currentBranch->getKnotCount() <= 1)
-                    {
-                        BranchNode* parent_branch = _currentBranch->getParentBranch();
-                        parent_branch->deleteLastChild();
-                    }
-
-                    _currentBranch = _stack[size].old_branch_node;
-                    
-                    _stack.pop_back();
-
-                    break;
+                    BranchNode* parent_branch = currentBranch->getParentBranch();
+                    parent_branch->deleteLastChild();
                 }
+
+                 // Zeiger auf den Eltern-Ast
+                currentBranch = _stack[size]._parentBranch;
+                
+                _stack.pop_back();
+                break;
+            }
         }
 
         if (new_i != 0)

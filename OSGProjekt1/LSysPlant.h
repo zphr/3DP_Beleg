@@ -16,12 +16,10 @@ using namespace std;
 
 struct PlantStackElement
 {
-  int old_branch, old_index;
-  osg::Vec4 old_vec;
-  osg::Matrix _rotMatrix;
-  osg::Vec4 _distanceVector;
-
-  BranchNode* old_branch_node;
+  osg::Vec4 _posVector;         /* vorherige Position */
+  osg::Matrix _rotMatrix;       /* vorherige Rotation */
+  osg::Vec4 _distanceVector;    /* vorheriger Richtungsvektor */
+  BranchNode* _parentBranch;    /* Zeiger auf den Eltern-Ast */
 };
 
 class LSysPlant
@@ -33,7 +31,6 @@ class LSysPlant
   string _startWord;
   string _variable;
   BranchNode _firstBranch;
-  BranchNode* _currentBranch;
 
   osg::Vec4 _distanceVector;
   osg::Matrix _rotMatrix;

@@ -24,6 +24,7 @@ class NaturalCubicSpline
         NaturalCubicSpline(
                 int curveSteps=3,
                 BaseCurve extrudeShape=CircleCurve(3),
+                NaturalCubicSpline* profile = 0,
                 osg::Vec3 firstFrameX = osg::Vec3(1,0,0),
                 osg::Vec3 firstFrameY = osg::Vec3(0,1,0),
                 osg::Vec3 firstFrameZ = osg::Vec3(0,0,1));
@@ -32,6 +33,7 @@ class NaturalCubicSpline
                 osg::ref_ptr<osg::Vec4Array> knots,
                 int curveSteps=3,
                 BaseCurve extrudeShape=CircleCurve(3),
+                NaturalCubicSpline* profile = 0,
                 osg::Vec3 firstFrameX = osg::Vec3(1,0,0),
                 osg::Vec3 firstFrameY = osg::Vec3(0,1,0),
                 osg::Vec3 firstFrameZ = osg::Vec3(0,0,1));
@@ -51,12 +53,15 @@ class NaturalCubicSpline
         osg::Vec3Array* getKnotFrameVectors(int n);
 
         void setKnots(osg::Vec4Array* knots);
+        inline int getKnotCount();
 
         void calcPolynomialsXYZ();
         vector<CubicPolynomial> calcPolynomials(float *coords, int count);
         void calcSpline();
         osg::Geometry* drawSpline();
         inline osg::Vec3 calcAt(int i, float t);
+        float calcProfileAt(float t);
+        float calcProfileAtPercent(float percent);
 
         osg::Geometry* drawTangentFrames();
         void calcTangentFrames();
@@ -84,4 +89,8 @@ class NaturalCubicSpline
         osg::Vec3 _firstFrameX;
         osg::Vec3 _firstFrameY;
         osg::Vec3 _firstFrameZ;
+
+    private:
+        NaturalCubicSpline* _profile;
+        vector<float> _profileScale;
 };

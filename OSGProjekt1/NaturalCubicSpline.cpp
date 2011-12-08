@@ -3,14 +3,22 @@
 NaturalCubicSpline::NaturalCubicSpline(
         int curveSteps,
         BaseCurve extrudeShape,
+        NaturalCubicSpline* profile,
         osg::Vec3 firstFrameX,
         osg::Vec3 firstFrameY,
         osg::Vec3 firstFrameZ)
 :  _curveSteps(curveSteps), _extrudeShape(extrudeShape)
 {
+    _knots = new osg::Vec4Array;
+
+    _knots->push_back( osg::Vec4(0,1,0,1));
+    _knots->push_back( osg::Vec4(1,0,0,1));
+    
     _firstFrameX = firstFrameX;
     _firstFrameY = firstFrameY;
     _firstFrameZ = firstFrameZ;
+                       
+    _profile = profile;
 
     _geometry = new osg::Geometry;
 }
@@ -19,6 +27,7 @@ NaturalCubicSpline::NaturalCubicSpline(
         osg::ref_ptr<osg::Vec4Array> knots,
         int curveSteps,
         BaseCurve extrudeShape,
+        NaturalCubicSpline* profile,
         osg::Vec3 firstFrameX,
         osg::Vec3 firstFrameY,
         osg::Vec3 firstFrameZ)
@@ -27,7 +36,9 @@ NaturalCubicSpline::NaturalCubicSpline(
     _firstFrameX = firstFrameX;
     _firstFrameY = firstFrameY;
     _firstFrameZ = firstFrameZ;
-    
+
+    _profile = profile;
+
     _geometry = new osg::Geometry;
     calcSpline();
 }
@@ -217,6 +228,10 @@ osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution,
 
             vert = osg::Vec4((*shape_verts)[j]);
             vert *= scale;
+
+            if(_profile)
+                vert *= _profileScale[i];
+
             vert[3] = 1;
             vert = _matrices[i] * vert;
 
@@ -373,6 +388,61 @@ inline osg::Vec3 NaturalCubicSpline::calcAt(int i, float t)
     return osg::Vec3(x,y,z);
 }
 
+float NaturalCubicSpline::calcProfileAtPercent(float percent)
+{
+    float t = (float)_polynomialsY.size() * percent;
+
+    return calcProfileAt(t);
+}
+
+float NaturalCubicSpline::calcProfileAt(float t)
+{
+    int i = (int) t;
+    float u = t - (float) i;
+
+    if((i == _polynomialsY.size()) && (u == 0.0))
+    {
+        i -= 1;
+        u = 1.0;
+    }
+
+    float max_x = 0.0;
+    float max_y = 0.0;
+    float max_z = 0.0;
+
+    for( int i=0; i<_knots->getNumElements(); i++)
+    {
+        if((*_knots)[i].x() > max_x)
+            max_x = (*_knots)[i].x();
+
+        if((*_knots)[i].y() > max_y)
+            max_y = (*_knots)[i].y();
+
+        if((*_knots)[i].z() > max_z)
+            max_z = (*_knots)[i].z();
+    }
+        
+    float x = _polynomialsX[i].calcAt(u);
+    float y = _polynomialsY[i].calcAt(u);
+    float z = _polynomialsZ[i].calcAt(u);
+
+    if(max_x == 0)
+        max_x = 1;
+
+    if(max_y == 0)
+        max_y = 1;
+
+    if(max_z == 0)
+        max_z = 1;
+
+    // Normalisieren
+    osg::Vec3 vec(x/max_x,
+                  y/max_y,
+                  z/max_z);
+
+    return y;
+}
+
 void NaturalCubicSpline::calcSpline()
 {
     calcPolynomialsXYZ();
@@ -387,6 +457,10 @@ void NaturalCubicSpline::calcSpline()
 
     _vertices->push_back( calcAt(0, 0) );
     _tangents->push_back( calcTangentAt(0, 0) );
+    if(_profile)
+        _profileScale.push_back( _profile->calcProfileAtPercent( 0 ) );
+
+    int polynomial_count = _polynomialsX.size();
 
     float u = 0.0f;
     for(int i=0; i < _knots->getNumElements()-1; i++)
@@ -397,10 +471,21 @@ void NaturalCubicSpline::calcSpline()
             //u += i;
             _vertices->push_back( calcAt(i, u) );
             _tangents->push_back( calcTangentAt(i, u) );
+
+            if(_profile)
+                _profileScale.push_back(
+                        _profile->calcProfileAtPercent(
+                                ((float)i + u) / (float) polynomial_count ));
+                        
         }
     }
 
     calcTangentFrames();
+}
+
+inline int NaturalCubicSpline::getKnotCount()
+{
+    return _knots->getNumElements();
 }
 
 osg::Geometry* NaturalCubicSpline::getPointSprites(osg::ref_ptr<osg::Geode> root)
