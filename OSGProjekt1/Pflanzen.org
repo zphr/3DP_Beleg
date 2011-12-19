@@ -28,11 +28,15 @@
      - [ ] erstmal wieder rausnehmen -> zufällige Generierung ist
        erstmal wichtiger (am Ende sieht man es eh nicht mehr so wenn
        Blätter dran sind)
-  5. [ ] zufällige Generierung
-  6. [ ] Jitter
-  7. [ ] UV-Koordinaten
-  8. [ ] Blätter
-  9. [ ] Einbindung/Gliederung in OSG (Klassenhierarchie/Vererbung)
+  6. [ ] zufällige Generierung
+  7. [ ] Jitter
+  8. [ ] UV-Koordinaten
+  9. [ ] Blätter
+  10. [ ] Einbindung/Gliederung in OSG (Klassenhierarchie/Vererbung)
+
+** [0/1] Random Fixes
+   - [ ] wenn der erste Ast nur einen Punkt hat stürzt es ab!
+
 
 * 3D-Stiele
   - [[http://stackoverflow.com/questions/5088275/opengl-tube-along-a-path][siehe Antwort auf Stackoverflow]]

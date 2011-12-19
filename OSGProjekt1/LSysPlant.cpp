@@ -253,7 +253,7 @@ inline void LSysPlant::RotMatX(float angle, osg::Matrix &mat)
     mRotationMatrix.makeRotate( osg::DegreesToRadians(angle),
             osg::Vec3f( 1.0f, 0.0f, 0.0f ) );  // X axis
 
-    mat = mRotationMatrix * mat;
+    mat = mat * mRotationMatrix;
 }
 
 inline void LSysPlant::RotMatY(float angle, osg::Matrix &mat)
@@ -262,7 +262,7 @@ inline void LSysPlant::RotMatY(float angle, osg::Matrix &mat)
     mRotationMatrix.makeRotate( osg::DegreesToRadians(angle),
             osg::Vec3f( 0.0f, 1.0f, 0.0f ) );  
 
-    mat = mRotationMatrix * mat;
+    mat = mat * mRotationMatrix;
 }
 
 inline void LSysPlant::RotMatZ(float angle, osg::Matrix &mat)
@@ -272,7 +272,7 @@ inline void LSysPlant::RotMatZ(float angle, osg::Matrix &mat)
             osg::DegreesToRadians(angle), 
             osg::Vec3f( 0.0f, 0.0f, 1.0f ) );  
 
-    mat = mRotationMatrix * mat;
+    mat = mat * mRotationMatrix;
 }
 
 string LSysPlant::getParanthesesContent(int str_pos, string str, int &para_end)
