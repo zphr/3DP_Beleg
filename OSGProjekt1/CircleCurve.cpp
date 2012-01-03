@@ -1,7 +1,8 @@
 #include "CircleCurve.h"
 
-CircleCurve::CircleCurve(int resolution):BaseCurve(resolution)
+CircleCurve::CircleCurve(int resolution)
 {
+    _resolution = resolution;
 }
 
 CircleCurve::~CircleCurve()
@@ -29,4 +30,76 @@ osg::Vec4Array* CircleCurve::calcPoints(unsigned int resolution)
     }
 
     return cylinder_verts.release();
+}
+
+osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int resolution,
+                                               float scale,
+                                               const vector<osg::Matrix> &matrices,
+                                               const osg::ref_ptr<osg::Vec3Array> &vertices,
+                                               const vector<float> &profileScale)
+{
+    
+    unsigned int elements = vertices->getNumElements();
+    int k = 0;
+
+    osg::ref_ptr<osg::Vec4Array> shape_verts = calcPoints(resolution);
+
+    osg::Vec4 vert;
+    osg::ref_ptr<osg::Vec4Array> verts = new osg::Vec4Array;
+
+    osg::Vec3 normal;
+    osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
+
+    osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
+
+    for(int i=0; i < elements; i++)
+    {
+        for(int j=0; j < shape_verts->getNumElements(); j++)
+        {
+
+            vert = osg::Vec4((*shape_verts)[j]);
+            vert *= scale;
+
+            if(profileScale.size() == elements)
+                vert *= profileScale[i];
+
+            vert[3] = 1;
+            vert = matrices[i] * vert;
+
+            verts->push_back(vert);
+
+            normal = osg::Vec3(vert.x(), vert.y(), vert.z());
+            // Normalen müssen vom Ursprung aus angegeben werden
+            normal -= (*vertices)[i];
+            normal.normalize();
+            normals->push_back(normal);
+
+            if(i < (elements-1))
+            {
+                if((i*resolution + j +1)%resolution != 0)
+                {
+                    face_indices->push_back(i*resolution + j);
+                    face_indices->push_back(i*resolution + j +1);
+                    face_indices->push_back(i*resolution + j +resolution+1);
+                    face_indices->push_back(i*resolution + j +resolution);
+                }              
+                else           
+                {              
+                    face_indices->push_back(i*resolution + j);
+                    face_indices->push_back(i*resolution + j -(resolution-1));
+                    face_indices->push_back(i*resolution + j +1);            
+                    face_indices->push_back(i*resolution + j +resolution);
+                }
+            }
+        }
+    }
+
+    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
+
+    geom->setVertexArray( verts.get() );
+    geom->setNormalArray( normals.get() );
+    geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
+    geom->addPrimitiveSet( face_indices.get() );
+
+    return geom.release();
 }

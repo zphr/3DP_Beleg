@@ -6,6 +6,7 @@ BranchNode::BranchNode()
     _firstKnotParentIndex = 0;
     _parentBranch = 0;
     _knots = new osg::Vec4Array;
+    _hasLeafes = false;
 
     _geom = new osg::Geometry;
 
@@ -17,6 +18,7 @@ BranchNode::BranchNode(int firstKnotParentIndex)
     _firstKnotParentIndex = 0; 
     _parentBranch = 0;
     _knots = new osg::Vec4Array;
+    _hasLeafes = false;
 
     _geom = new osg::Geometry;
 
@@ -28,6 +30,7 @@ BranchNode::BranchNode(BranchNode* parentBranch, osg::Vec4 start_knot, int first
     _parentBranch = parentBranch;
     _knots = new osg::Vec4Array;
     _knots->push_back(start_knot);
+    _hasLeafes = false;
 
     _geom = new osg::Geometry;
 
@@ -38,6 +41,7 @@ BranchNode::BranchNode(BranchNode* parentBranch, osg::ref_ptr<osg::Vec4Array> kn
 {
     _parentBranch = parentBranch;
     _knots = new osg::Vec4Array( (*knots) );
+    _hasLeafes = false;
 
     _geom = new osg::Geometry;
 }
@@ -203,3 +207,12 @@ void BranchNode::calcBranches(osg::ref_ptr<osg::Geode> geode)
     }
 }
 
+bool BranchNode::hasLeafes()
+{
+    return _hasLeafes;
+}
+
+void BranchNode::buildLeafes()
+{
+    
+}

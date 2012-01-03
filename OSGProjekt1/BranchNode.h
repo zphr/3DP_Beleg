@@ -45,6 +45,9 @@ class BranchNode
 
         int _index;
 
+        bool hasLeaves();
+        void buildLeaves();
+
     private:
         BranchNode* _parentBranch;
         vector<BranchNode*> _branchChildren;
@@ -55,4 +58,9 @@ class BranchNode
         int _firstKnotParentIndex;
 
         osg::ref_ptr<osg::Geometry> _geom;
+
+        bool _hasLeaves;
+        osg::Geometry _leaf;
+        NaturalCubicSpline _leafSpline, _leafExtrudeProfile;
+
 };

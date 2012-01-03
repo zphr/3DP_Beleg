@@ -2,22 +2,24 @@
 
 NaturalCubicSpline::NaturalCubicSpline(
         int curveSteps,
-        BaseCurve extrudeShape,
+        BaseCurve *extrudeShape,
         NaturalCubicSpline* profile,
         osg::Vec3 firstFrameX,
         osg::Vec3 firstFrameY,
         osg::Vec3 firstFrameZ)
-:  _curveSteps(curveSteps), _extrudeShape(extrudeShape)
+:  _curveSteps(curveSteps)
 {
+    _extrudeShape = extrudeShape;
+
     _knots = new osg::Vec4Array;
 
     _knots->push_back( osg::Vec4(0,1,0,1));
     _knots->push_back( osg::Vec4(1,0,0,1));
-    
+
     _firstFrameX = firstFrameX;
     _firstFrameY = firstFrameY;
     _firstFrameZ = firstFrameZ;
-                       
+
     _profile = profile;
 
     _geometry = new osg::Geometry;
@@ -26,13 +28,15 @@ NaturalCubicSpline::NaturalCubicSpline(
 NaturalCubicSpline::NaturalCubicSpline(
         osg::ref_ptr<osg::Vec4Array> knots,
         int curveSteps,
-        BaseCurve extrudeShape,
+        BaseCurve *extrudeShape,
         NaturalCubicSpline* profile,
         osg::Vec3 firstFrameX,
         osg::Vec3 firstFrameY,
         osg::Vec3 firstFrameZ)
-:  _knots(knots.get()), _curveSteps(curveSteps), _extrudeShape(extrudeShape)
+:  _knots(knots.get()), _curveSteps(curveSteps)
 {
+    _extrudeShape = extrudeShape;
+
     _firstFrameX = firstFrameX;
     _firstFrameY = firstFrameY;
     _firstFrameZ = firstFrameZ;
@@ -74,20 +78,31 @@ void NaturalCubicSpline::setFirstFrame(osg::Vec3 firstFrameX,
     _firstFrameZ = firstFrameZ;
 }
 
-inline osg::Matrix NaturalCubicSpline::getKnotFrame(int n)
+inline osg::Matrix NaturalCubicSpline::getFrame(int n, int stepping)
 {
+    // TODO: Exception auslösen
     if(n >= _matrices.size())
          return osg::Matrix();
     else
-         return _matrices[_curveSteps * n];
+         return _matrices[stepping * n];
+}
+
+
+inline osg::Matrix NaturalCubicSpline::getKnotFrame(int n)
+{
+    return getFrame(n, _curveSteps);
 }
 
 osg::Vec3Array* NaturalCubicSpline::getKnotFrameVectors(int n)
 {
-    this;
+    return getFrameVectors(n, _curveSteps);
+}
 
+osg::Vec3Array* NaturalCubicSpline::getFrameVectors(int n, int stepping)
+{
     osg::ref_ptr<osg::Vec3Array> vec_array = new osg::Vec3Array;
-    
+
+    // TODO: Exception auslösen
     if(n >= _matrices.size())
     {
         vec_array->push_back(osg::Vec3(1,0,0));
@@ -96,8 +111,8 @@ osg::Vec3Array* NaturalCubicSpline::getKnotFrameVectors(int n)
     }
     else
     {
-        osg::Matrix mat = _matrices[_curveSteps * n];
-                 
+        osg::Matrix mat = _matrices[stepping * n];
+
         vec_array->push_back(osg::Vec3(mat(0,0), mat(1,0), mat(2,0))); // X-Achse
         vec_array->push_back(osg::Vec3(mat(0,1), mat(1,1), mat(2,1))); // Y-Achse
         vec_array->push_back(osg::Vec3(mat(0,2), mat(1,2), mat(2,2))); // Z-Achse
@@ -105,6 +120,7 @@ osg::Vec3Array* NaturalCubicSpline::getKnotFrameVectors(int n)
 
     return vec_array.release();
 }
+
 
 void NaturalCubicSpline::setKnots(osg::Vec4Array* knots)
 {
@@ -190,6 +206,34 @@ vector<CubicPolynomial> NaturalCubicSpline::calcPolynomials(float *coords, int c
     return polynomials;
 }
 
+inline void NaturalCubicSpline::calcPolyIndexAndU(float t, int &i, float &u)
+{
+    i = (int) t;
+    u = t - (float) i;
+
+    if((i == _polynomialsY.size()) && (u == 0.0))
+    {
+        i -= 1;
+        u = 1.0;
+    }
+}
+
+inline float NaturalCubicSpline::calcShare(float percent)
+{
+    return (float)_polynomialsY.size() * percent;
+}
+
+osg::Vec3 NaturalCubicSpline::calcTangentAtPercent(float percent)
+{
+    float t = calcShare(percent);
+    int i = 0;
+    float u = 0.0;
+    calcPolyIndexAndU(t, i, u);
+
+    return calcTangentAt(i, u);
+}
+
+
 osg::Vec3 NaturalCubicSpline::calcTangentAt(int i, float t)
 {
     float tangent_x = _polynomialsX[i].firstDerivCalcAt(t);
@@ -207,78 +251,12 @@ osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution,
     // das mal anstoßen
     if((_vertices == 0) || (_matrices.size() == 0))
          calcSpline();
-    
-    unsigned int elements = _vertices->getNumElements();
-    int k = 0;
 
-    osg::ref_ptr<osg::Vec4Array> shape_verts = CircleCurve().calcPoints(resolution);
-
-    osg::Vec4 vert;
-    osg::ref_ptr<osg::Vec4Array> verts = new osg::Vec4Array;
-
-    osg::Vec3 normal;
-    osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
-
-    osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
-
-    for(int i=0; i < elements; i++)
-    {
-        for(int j=0; j < shape_verts->getNumElements(); j++)
-        {
-
-            vert = osg::Vec4((*shape_verts)[j]);
-            vert *= scale;
-
-            if(_profile)
-                vert *= _profileScale[i];
-
-            vert[3] = 1;
-            vert = _matrices[i] * vert;
-
-            verts->push_back(vert);
-
-            normal = osg::Vec3(vert.x(), vert.y(), vert.z());
-            // Normalen müssen vom Ursprung aus angegeben werden
-            normal -= (*_vertices)[i];
-            normal.normalize();
-            normals->push_back(normal);
-
-            if(i < (elements-1))
-            {
-                if((i*resolution + j +1)%resolution != 0)
-                {
-                    face_indices->push_back(i*resolution + j);
-                    face_indices->push_back(i*resolution + j +1);
-                    face_indices->push_back(i*resolution + j +resolution+1);
-                    face_indices->push_back(i*resolution + j +resolution);
-                }              
-                else           
-                {              
-                    face_indices->push_back(i*resolution + j);
-                    face_indices->push_back(i*resolution + j -(resolution-1));
-                    face_indices->push_back(i*resolution + j +1);            
-                    face_indices->push_back(i*resolution + j +resolution);
-                }
-            }
-        }
-    }
-
-    //for(int i=0; i<elements*4; i++)
-    //{
-        //printf("%d ", (*face_indices)[i]);
-        //if((i+1)%4 == 0)
-            //printf("\n");
-    //}
-    
-    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
-    geom->setVertexArray( verts.get() );
-
-    geom->setVertexArray( verts.get() );
-    geom->setNormalArray( normals.get() );
-    geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
-    geom->addPrimitiveSet( face_indices.get() );
-
-    return geom.release();
+    return (_extrudeShape->buildMeshAlongPath(resolution,
+                                              scale,
+                                              _matrices,
+                                              _vertices,
+                                              _profileScale));
 }
 
 osg::Geometry* NaturalCubicSpline::drawTangentFrames()
@@ -313,12 +291,41 @@ osg::Geometry* NaturalCubicSpline::drawTangentFrames()
     }
 
     osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
-    tangent_geo->setVertexArray( tangent_vertices ); 
-    tangent_geo->addPrimitiveSet( 
+    tangent_geo->setVertexArray( tangent_vertices );
+    tangent_geo->addPrimitiveSet(
             new osg::DrawArrays(GL_LINES, 0, tangent_vertices->getNumElements()) );
 
     return tangent_geo.release();
 }
+
+osg::Geometry* NaturalCubicSpline::drawTangentFrame(osg::Matrix mat)
+{
+    osg::Vec4 vec;               // Ortsvektor
+    osg::Vec4 x_axis(1,0,0,1);
+    osg::Vec4 y_axis(0,1,0,1);
+    osg::Vec4 z_axis(0,0,1,1);
+
+    osg::ref_ptr<osg::Vec4Array>tangent_vertices = new osg::Vec4Array;
+
+    vec = osg::Vec4( mat(0,3), mat(1,3), mat(2,3), 1 );
+
+    tangent_vertices->push_back(vec);
+    tangent_vertices->push_back(mat*x_axis);
+
+    tangent_vertices->push_back(vec);
+    tangent_vertices->push_back(mat*y_axis);
+
+    tangent_vertices->push_back(vec);
+    tangent_vertices->push_back(mat*z_axis);
+
+    osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
+    tangent_geo->setVertexArray( tangent_vertices );
+    tangent_geo->addPrimitiveSet(
+            new osg::DrawArrays(GL_LINES, 0, tangent_vertices->getNumElements()) );
+
+    return tangent_geo.release();
+}
+
 
 void NaturalCubicSpline::calcTangentFrames()
 {
@@ -373,11 +380,22 @@ osg::Geometry* NaturalCubicSpline::drawSpline()
     _geometry = new osg::Geometry;
 
     _geometry->setVertexArray( _vertices );
-    _geometry->addPrimitiveSet( 
+    _geometry->addPrimitiveSet(
             new osg::DrawArrays(GL_LINE_STRIP, 0, _vertices->getNumElements()) );
 
     return _geometry.get();
 }
+
+inline osg::Vec3 NaturalCubicSpline::calcAtPercent(float percent)
+{
+    float t = calcShare(percent);
+    int i = 0;
+    float u = 0.0;
+    calcPolyIndexAndU(t, i, u);
+
+    return calcAt(i, u);
+}
+
 
 inline osg::Vec3 NaturalCubicSpline::calcAt(int i, float t)
 {
@@ -421,7 +439,7 @@ float NaturalCubicSpline::calcProfileAt(float t)
         if((*_knots)[i].z() > max_z)
             max_z = (*_knots)[i].z();
     }
-        
+
     float x = _polynomialsX[i].calcAt(u);
     float y = _polynomialsY[i].calcAt(u);
     float z = _polynomialsZ[i].calcAt(u);
@@ -457,6 +475,7 @@ void NaturalCubicSpline::calcSpline()
 
     _vertices->push_back( calcAt(0, 0) );
     _tangents->push_back( calcTangentAt(0, 0) );
+
     if(_profile)
         _profileScale.push_back( _profile->calcProfileAtPercent( 0 ) );
 
@@ -468,7 +487,7 @@ void NaturalCubicSpline::calcSpline()
         for(int j = 1; j <=_curveSteps; j++)
         {
             u = j / (float) _curveSteps;
-            //u += i;
+
             _vertices->push_back( calcAt(i, u) );
             _tangents->push_back( calcTangentAt(i, u) );
 
@@ -476,7 +495,7 @@ void NaturalCubicSpline::calcSpline()
                 _profileScale.push_back(
                         _profile->calcProfileAtPercent(
                                 ((float)i + u) / (float) polynomial_count ));
-                        
+
         }
     }
 
@@ -514,5 +533,258 @@ osg::Geometry* NaturalCubicSpline::getPointSprites(osg::ref_ptr<osg::Geode> root
     set->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
     set->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
-    return sprites.release(); 
+    return sprites.release();
+}
+
+inline osg::Vec3Array* NaturalCubicSpline::cloneVec4ArrayTo3( osg::ref_ptr<osg::Vec4Array> vec4_array)
+{
+    osg::ref_ptr<osg::Vec3Array> vec = new osg::Vec3Array();
+
+    for(int i=0; i < vec4_array->getNumElements(); i++)
+        vec->push_back( osg::Vec3((*vec4_array)[i].x(),
+                                   (*vec4_array)[i].y(),
+                                   (*vec4_array)[i].z()));
+
+    return vec.release();
+}
+
+
+inline osg::Vec3 NaturalCubicSpline::convVec4To3(const osg::Vec4 &vec4)
+{
+    return osg::Vec3(vec4.x(), vec4.y(), vec4.z());
+}
+
+osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
+                                                   float scale,
+                                                   const vector<osg::Matrix> &matrices,
+                                                   const osg::ref_ptr<osg::Vec3Array> &vertices,
+                                                   const vector<float> &profileScale)
+{
+
+    unsigned int elements = vertices->getNumElements();
+    int k = 0;
+
+    osg::ref_ptr<osg::Vec4Array> shape_verts = calcPoints(resolution);
+
+    // die Auflösung wird für ein NaturalCubicSpline zwischen den
+    // Segmenten angegeben, daher muss noch die absolute Auflösung
+    // geholten werden!
+    resolution = shape_verts->getNumElements();
+
+    osg::Vec4 vert;
+    osg::ref_ptr<osg::Vec4Array> verts = new osg::Vec4Array;
+
+    osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
+
+    for(int i=0; i < elements; i++)
+    {
+        for(int j=0; j < shape_verts->getNumElements(); j++)
+        {
+            
+            vert = osg::Vec4((*shape_verts)[j]);
+            vert *= scale;
+            
+            if(profileScale.size() == elements)
+                vert *= profileScale[i];
+
+            vert[3] = 1;
+            vert = matrices[i] * vert;
+
+            verts->push_back(vert);
+
+            if((i < (elements-1)) && (j < (resolution-1)))
+            {
+                face_indices->push_back( i * resolution + j );
+                face_indices->push_back( i * resolution + (j + 1));
+                face_indices->push_back( (i+1) * resolution + (j + 1));
+                face_indices->push_back( (i+1) * resolution + j);
+            }
+        }
+    }
+
+    osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
+    int vert_count = verts->getNumElements();
+    osg::Vec3 n;
+
+    osg::Vec3 e1, e2, e3, e4;
+
+
+    for(int i=0; i < vert_count; i++)
+    {
+        
+        int imodr = (i % resolution);
+        if(imodr == 0)
+        {
+            // Unten ganz links
+            if(i == 0)
+            {
+                e2 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+                e3 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+                n = e3 ^ e2;
+            }
+            // Oben ganz links
+            else if(i == (vert_count-resolution))
+            {
+                e1 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+                n = e2 ^ e1;
+            }
+            // am linken Rand 
+            else
+            {
+                e1 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+                e3 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+
+                n = e2 ^ e1;
+                n += e3 ^ e2;
+                n /= 2;
+            }
+
+        }
+        else if(imodr == (resolution-1))
+        {
+
+            // Unten ganz rechts
+            if(i == (resolution-1))
+            {
+                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
+
+                n = e2 ^ e1;
+            }
+            // Oben ganz rechts
+            else if(i == (vert_count-1))
+            {
+                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
+                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+
+                n = e3 ^ e2;
+            }
+            // rechter Rand
+            else
+            {
+                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
+                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+
+                n = e2 ^ e1;
+                n += e3 ^ e2;
+                n /= 2;
+            }
+
+        }
+        else
+        {
+            // Unterer Rand
+            if( (i / resolution) == 0)
+            {
+                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
+                e4 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+
+                n = e2 ^ e1;
+                n += e1 ^ e4;
+                n /= 2;
+            }
+            // Oberer Rand
+            else if((i/(vert_count - resolution) <= 1))
+            {
+                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
+                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+                e4 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+
+                n = e3 ^ e2;
+                n += e4 ^ e3;
+                n /= 2;
+            }
+            // in der Mitte
+            else
+            {
+                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
+                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+                e4 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+
+                n = e2 ^ e1;
+                n += e3 ^ e2;
+                n += e4 ^ e3;
+                n += e1 ^ e4;
+                n /= 4;
+            }
+        }
+
+        n.normalize();
+        normals->push_back( n );
+    }
+
+    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
+
+    geom->setVertexArray( verts.get() );
+    geom->setNormalArray( normals.get() );
+    geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
+    geom->addPrimitiveSet( face_indices.get() );
+
+    return geom.release();
+}
+
+osg::Vec4Array* NaturalCubicSpline::calcPoints(unsigned int resolution)
+{
+    _curveSteps = resolution;
+    calcSpline();
+
+    osg::ref_ptr<osg::Vec4Array> vecs = new osg::Vec4Array();
+
+    for(int i=0; i < _vertices->getNumElements(); i++)
+        vecs->push_back( osg::Vec4(
+                                 (*_vertices)[i].x(),
+                                 (*_vertices)[i].y(),
+                                 (*_vertices)[i].z(),
+                                 1.0)
+                       );
+
+    return vecs.release();
+}
+
+osg::Matrix NaturalCubicSpline::calcFrameAt(float u)
+{
+    int frame_count = _vertices->getNumElements();
+    float prev_framef = (u * (frame_count - 1));
+    int prev_frame = (int) prev_framef;
+
+    if((prev_framef - prev_frame) < 0.005)
+        return getFrame( prev_frame );
+
+    osg::ref_ptr<osg::Vec3Array> prev_vecs = getFrameVectors( prev_frame );
+
+    osg::Vec3 r( (*prev_vecs)[0] );
+    osg::Vec3 s( (*prev_vecs)[1] );
+    osg::Vec3 t( (*prev_vecs)[2] );
+    osg::Vec3 vertex( (*_vertices)[prev_frame] );
+
+    osg::Vec3 target_r;
+    osg::Vec3 target_s;
+    osg::Vec3 target_t( calcTangentAtPercent(u) );
+    osg::Vec3 target_v( calcAtPercent(u) );
+
+    // Double Reflection
+    osg::Vec3 v1 = target_v - vertex;
+    float c1 = v1 * v1;
+
+    osg::Vec3 rLi = r - v1 * (v1 * r) * (2/c1);
+    osg::Vec3 tLi = t -  v1 * (v1 * t) * (2/c1);
+
+    osg::Vec3 v2 = target_t - tLi;
+    float c2 = v2 * v2;
+    target_r =  osg::Vec3( rLi - v2 * (v2 * rLi) * (2/c2) );
+    target_s = target_t ^ target_r;
+
+    osg::Matrix mat = osg::Matrix(
+            target_r.x(), target_s.x(), target_t.x(), target_v.x(),
+            target_r.y(), target_s.y(), target_t.y(), target_v.y(),
+            target_r.z(), target_s.z(), target_t.z(), target_v.z(),
+            0,           0,          0,       1
+    );
+
+    return mat;
 }

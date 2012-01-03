@@ -25,14 +25,41 @@ int main( int argc, char** argv)
 
     osg::ref_ptr<osg::Geode> root = new osg::Geode;
 
-    // osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
-    // profile_points->push_back(osg::Vec4(0,0.25,0,1));
-    // profile_points->push_back(osg::Vec4(0.25,0.75,0,1));
-    // profile_points->push_back(osg::Vec4(0.9,0.25,0,1));
-    // profile_points->push_back(osg::Vec4(1,.5,0,1));
+    
+    // osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
+    // points->push_back(osg::Vec4(1,0,0,1));
+    // points->push_back(osg::Vec4(1,0,1,1));
+    // points->push_back(osg::Vec4(2,0,1,1));
 
-    // NaturalCubicSpline profile_spline(profile_points);
-    // root->addDrawable( profile_spline.drawSpline() );
+    // NaturalCubicSpline spline(points, 1);
+    // root->addDrawable( spline.drawSpline() );
+
+
+    osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
+    profile_points->push_back(osg::Vec4(0,0,0,1));
+    profile_points->push_back(osg::Vec4(1,0,1,1));
+    profile_points->push_back(osg::Vec4(2,0,1,1));
+
+    // profile_points->push_back(osg::Vec4(0,0,2,1));
+    // profile_points->push_back(osg::Vec4(0.25,0.75,0,1));
+    // profile_points->push_back(osg::Vec4(0.9,0.25,3,1));
+    // profile_points->push_back(osg::Vec4(1,.5,0,1));
+    
+    osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
+    line_points->push_back(osg::Vec4(0.25,-1,0,1));
+    line_points->push_back(osg::Vec4(0, 0,0,1));
+    line_points->push_back(osg::Vec4(0.25,1,0,1));
+
+    NaturalCubicSpline line_spline(line_points, 1);
+    root->addDrawable( line_spline.drawSpline() );
+
+    NaturalCubicSpline profile_spline(profile_points ,
+                                      12,
+                                      new NaturalCubicSpline(line_points, 1) 
+                                      );
+    // root->addDrawable( profile_spline.drawTangentFrame( profile_spline.calcFrameAt(0.01) ));
+    root->addDrawable( profile_spline.drawExtrudedCylinder(8, 0.1) );
+    root->addDrawable( profile_spline.drawSpline() );
 
     // osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array;
     // points->push_back(osg::Vec4(1,0,0,1));
@@ -57,7 +84,9 @@ int main( int argc, char** argv)
     //root->addDrawable( spline2.drawSpline() );
     //root->addDrawable( spline2.getPointSprites(root) );
 
-    map<char, string> rules;
+
+
+    // map<char, string> rules;
 
     // rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";
     
@@ -75,20 +104,20 @@ int main( int argc, char** argv)
     // rules['S'] = "F[&+(-45)A][&+(45)A]{(8)FS";
     // rules['A'] = "^F[&FA&F][^FA^F]F";
 
-    rules['S'] = "[A(x)]+(66)[A(1.0)]+(66)[A(1.0)]+(66)[A(1.0)]F";
-    rules['A'] = "&(45)F(x/1.456)^F(x/1.456)^F(x/1.456)[S]";
+    // rules['S'] = "[A(x)]+(66)[A(1.0)]+(66)[A(1.0)]+(66)[A(1.0)]F";
+    // rules['A'] = "&(45)F(x/1.456)^F(x/1.456)^F(x/1.456)[S]";
 
     // // Test-Baum ausm Buch
     // rules['S'] = "F[&S][^S]FS";
     // rules['F'] = "FF";
     
-    float delta = 22.5;
-    osg::Vec4 dist (0.0, 0.0, 5.0, 1.0);
-    osg::Matrix rot_mat;
+    // float delta = 22.5;
+    // osg::Vec4 dist (0.0, 0.0, 5.0, 1.0);
+    // osg::Matrix rot_mat;
 
-    LSysPlant plant(5, delta, rules, rules['S'],  dist, rot_mat);
+    // LSysPlant plant(5, delta, rules, rules['S'],  dist, rot_mat);
 
-    plant.drawPlant(root);
+    // plant.drawPlant(root);
 
     osgViewer::Viewer viewer;
     viewer.setSceneData( root.get() );
