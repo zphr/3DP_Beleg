@@ -1,7 +1,9 @@
 #include <osg/ShapeDrawable>
 #include <osg/Geometry>
+#include <osg/MatrixTransform>
 #include <osg/Geode>
 #include "NaturalCubicSpline.h"
+#include "LeafGeode.h"
 #include <iostream>
 #include <deque>
 #pragma once
@@ -10,14 +12,23 @@ using namespace std;
 class BranchNode
 {
     public:
-        BranchNode();
-        BranchNode(int firstKnotParentIndex);
+        BranchNode(BranchNode* parentBranch,
+                   osg::ref_ptr<osg::Vec4Array> knots,
+                   bool hasLeaves = false,
+                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
+                   int leavesCount = 0
+                    );
+        BranchNode(
+                vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
+                int leavesCount = 0
+                );
         BranchNode(BranchNode* parentBranch,
                    osg::Vec4 start_knot,
                    int firstKnotParentIndex,
-                   int index);
-        BranchNode(BranchNode* parentBranch,
-                   osg::ref_ptr<osg::Vec4Array> knots);
+                   int index,
+                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
+                   int leavesCount = 0
+                   );
         ~BranchNode();
 
         BranchNode* getParentBranch();
@@ -46,7 +57,7 @@ class BranchNode
         int _index;
 
         bool hasLeaves();
-        void buildLeaves();
+        osg::Group* buildLeaves();
 
     private:
         BranchNode* _parentBranch;
@@ -60,7 +71,6 @@ class BranchNode
         osg::ref_ptr<osg::Geometry> _geom;
 
         bool _hasLeaves;
-        osg::Geometry _leaf;
-        NaturalCubicSpline _leafSpline, _leafExtrudeProfile;
-
+        vector<osg::ref_ptr<LeafGeode>> _leavesGeodes;
+        int _leavesCount;
 };

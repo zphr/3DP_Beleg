@@ -1,49 +1,57 @@
 #include "BranchNode.h"
 
 
-BranchNode::BranchNode()
+BranchNode::BranchNode(BranchNode* parentBranch,
+        osg::ref_ptr<osg::Vec4Array> knots,
+        bool hasLeaves,
+        vector<osg::ref_ptr<LeafGeode>> leavesGeodes, 
+        int leavesCount)
+{
+    _parentBranch = parentBranch;
+    _knots = new osg::Vec4Array( (*knots) );
+
+    _hasLeaves = hasLeaves;
+    _leavesGeodes = leavesGeodes;
+    _leavesCount = leavesCount;
+
+    _geom = new osg::Geometry;
+}
+
+BranchNode::BranchNode(vector<osg::ref_ptr<LeafGeode>> leavesGeodes, int leavesCount)
 {
     _firstKnotParentIndex = 0;
     _parentBranch = 0;
     _knots = new osg::Vec4Array;
-    _hasLeafes = false;
+
+    _hasLeaves = false;
+    _leavesGeodes = leavesGeodes;
+    _leavesCount = leavesCount;
 
     _geom = new osg::Geometry;
 
     _index = 0;
 }
 
-BranchNode::BranchNode(int firstKnotParentIndex)
-{
-    _firstKnotParentIndex = 0; 
-    _parentBranch = 0;
-    _knots = new osg::Vec4Array;
-    _hasLeafes = false;
-
-    _geom = new osg::Geometry;
-
-}
-
-BranchNode::BranchNode(BranchNode* parentBranch, osg::Vec4 start_knot, int firstKnotParentIndex, int index)
+BranchNode::BranchNode(BranchNode* parentBranch,
+        osg::Vec4 start_knot,
+        int firstKnotParentIndex,
+        int index, 
+        vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
+        int leavesCount
+        )
 {
     _firstKnotParentIndex = firstKnotParentIndex;
     _parentBranch = parentBranch;
     _knots = new osg::Vec4Array;
     _knots->push_back(start_knot);
-    _hasLeafes = false;
+
+    _hasLeaves = false;
+    _leavesGeodes = leavesGeodes;
+    _leavesCount = leavesCount;
 
     _geom = new osg::Geometry;
 
     _index = index;
-}
-
-BranchNode::BranchNode(BranchNode* parentBranch, osg::ref_ptr<osg::Vec4Array> knots)
-{
-    _parentBranch = parentBranch;
-    _knots = new osg::Vec4Array( (*knots) );
-    _hasLeafes = false;
-
-    _geom = new osg::Geometry;
 }
 
 BranchNode::~BranchNode()
@@ -207,12 +215,38 @@ void BranchNode::calcBranches(osg::ref_ptr<osg::Geode> geode)
     }
 }
 
-bool BranchNode::hasLeafes()
+bool BranchNode::hasLeaves()
 {
-    return _hasLeafes;
+    return _hasLeaves;
 }
 
-void BranchNode::buildLeafes()
+osg::Group* BranchNode::buildLeaves()
 {
-    
+    osg::ref_ptr<osg::Vec4Array> spline_points = new osg::Vec4Array;
+    spline_points->push_back(osg::Vec4(0,0,0,1));
+    // spline_points->push_back(osg::Vec4(0.5,0.25,0,1));
+    spline_points->push_back(osg::Vec4(1,1,0,1));
+
+    NaturalCubicSpline spline(spline_points, _leavesCount);
+
+    osg::ref_ptr<osg::Vec3Array> sp_verts(spline.getVertices());
+
+    osg::ref_ptr<osg::Group> group = new osg::Group;
+
+    vector<osg::ref_ptr<osg::MatrixTransform>> transVec;
+
+    if(_leavesGeodes.size() == 0)
+         return 0;
+
+    for(int i=0; i < sp_verts->getNumElements(); i++)
+    {
+        float t = (*sp_verts)[i].y();
+        transVec.push_back( new osg::MatrixTransform());
+
+        transVec[transVec.size()-1]->setMatrix(_spline.calcFrameAt(t));
+        transVec[transVec.size()-1]->addChild(_leavesGeodes[0]);
+        group->addChild(transVec[transVec.size()-1]);
+    }
+
+    return group.release();
 }

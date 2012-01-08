@@ -18,7 +18,7 @@ osg::Vec4Array* CircleCurve::calcPoints(unsigned int resolution)
     osg::Vec4 circle_vert;
     osg::ref_ptr<osg::Vec4Array> cylinder_verts = new osg::Vec4Array;
 
-    for(float j=0; j <= (PI_2-PI_step); j+=PI_step)
+    for(float j=0; j <= (PI_2); j+=PI_step)
     {
         x = cos(j);
         y = sin(j);
@@ -52,6 +52,12 @@ osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int resolution,
 
     osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
 
+    float tex_width  = (1.0 / (resolution));
+    float tex_height = (1.0 / (elements-1));
+    
+    resolution++;
+    
+    osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
     for(int i=0; i < elements; i++)
     {
         for(int j=0; j < shape_verts->getNumElements(); j++)
@@ -65,32 +71,41 @@ osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int resolution,
 
             vert[3] = 1;
             vert = matrices[i] * vert;
-
             verts->push_back(vert);
 
+            texc->push_back(osg::Vec2((tex_width * j), (tex_height * i)));
+            
             normal = osg::Vec3(vert.x(), vert.y(), vert.z());
             // Normalen müssen vom Ursprung aus angegeben werden
             normal -= (*vertices)[i];
             normal.normalize();
             normals->push_back(normal);
 
-            if(i < (elements-1))
+            if((i < (elements-1)) && (j < (resolution-1)))
             {
-                if((i*resolution + j +1)%resolution != 0)
-                {
-                    face_indices->push_back(i*resolution + j);
-                    face_indices->push_back(i*resolution + j +1);
-                    face_indices->push_back(i*resolution + j +resolution+1);
-                    face_indices->push_back(i*resolution + j +resolution);
-                }              
-                else           
-                {              
-                    face_indices->push_back(i*resolution + j);
-                    face_indices->push_back(i*resolution + j -(resolution-1));
-                    face_indices->push_back(i*resolution + j +1);            
-                    face_indices->push_back(i*resolution + j +resolution);
-                }
+                face_indices->push_back( i * resolution + j );
+                face_indices->push_back( i * resolution + (j + 1));
+                face_indices->push_back( (i+1) * resolution + (j + 1));
+                face_indices->push_back( (i+1) * resolution + j);
             }
+            
+            // if(i < (elements-1))
+            // {
+            //     if((i*resolution + j +1)%resolution != 0)
+            //     {
+            //         face_indices->push_back(i*resolution + j);
+            //         face_indices->push_back(i*resolution + j +1);
+            //         face_indices->push_back(i*resolution + j +resolution+1);
+            //         face_indices->push_back(i*resolution + j +resolution);
+            //     }              
+            //     else           
+            //     {              
+            //         face_indices->push_back(i*resolution + j);
+            //         face_indices->push_back(i*resolution + j -(resolution-1));
+            //         face_indices->push_back(i*resolution + j +1);            
+            //         face_indices->push_back(i*resolution + j +resolution);
+            //     }
+            // }
         }
     }
 
@@ -99,6 +114,7 @@ osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int resolution,
     geom->setVertexArray( verts.get() );
     geom->setNormalArray( normals.get() );
     geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
+    geom->setTexCoordArray(0,texc.get());
     geom->addPrimitiveSet( face_indices.get() );
 
     return geom.release();

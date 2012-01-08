@@ -353,6 +353,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\LeafGeode.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\LSysPlant.cpp"
 				>
 			</File>
@@ -384,6 +388,10 @@
 			</File>
 			<File
 				RelativePath=".\CubicPolynomial.h"
+				>
+			</File>
+			<File
+				RelativePath=".\LeafGeode.h"
 				>
 			</File>
 			<File

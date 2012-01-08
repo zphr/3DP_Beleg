@@ -13,8 +13,8 @@ NaturalCubicSpline::NaturalCubicSpline(
 
     _knots = new osg::Vec4Array;
 
-    _knots->push_back( osg::Vec4(0,1,0,1));
-    _knots->push_back( osg::Vec4(1,0,0,1));
+    _knots->push_back( osg::Vec4(0,0,0,1));
+    _knots->push_back( osg::Vec4(1,1,0,1));
 
     _firstFrameX = firstFrameX;
     _firstFrameY = firstFrameY;
@@ -298,6 +298,11 @@ osg::Geometry* NaturalCubicSpline::drawTangentFrames()
     return tangent_geo.release();
 }
 
+osg::Geometry* NaturalCubicSpline::drawTangentFrameAt(float t)
+{
+    return drawTangentFrame( calcFrameAt(t) );
+}
+
 osg::Geometry* NaturalCubicSpline::drawTangentFrame(osg::Matrix mat)
 {
     osg::Vec4 vec;               // Ortsvektor
@@ -576,6 +581,10 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
 
     osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
 
+    osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
+    float tex_width  = 1.0 / (resolution-1);
+    float tex_height = 1.0 / elements;
+
     for(int i=0; i < elements; i++)
     {
         for(int j=0; j < shape_verts->getNumElements(); j++)
@@ -591,6 +600,8 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
             vert = matrices[i] * vert;
 
             verts->push_back(vert);
+            
+            texc->push_back(osg::Vec2(tex_width * j, tex_height * i));
 
             if((i < (elements-1)) && (j < (resolution-1)))
             {
@@ -601,13 +612,12 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
             }
         }
     }
-
+    
     osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
     int vert_count = verts->getNumElements();
     osg::Vec3 n;
 
     osg::Vec3 e1, e2, e3, e4;
-
 
     for(int i=0; i < vert_count; i++)
     {
@@ -723,6 +733,7 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
     geom->setVertexArray( verts.get() );
     geom->setNormalArray( normals.get() );
     geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
+    geom->setTexCoordArray(0,texc.get());
     geom->addPrimitiveSet( face_indices.get() );
 
     return geom.release();
@@ -786,5 +797,22 @@ osg::Matrix NaturalCubicSpline::calcFrameAt(float u)
             0,           0,          0,       1
     );
 
+    // osg::Matrix mat = osg::Matrix(
+    //         target_r.x(),target_r.y(),target_r.z(), 0,
+    //         target_s.x(),target_s.y(),target_s.z(), 0,
+    //         target_t.x(),target_t.y(),target_t.z(), 0,
+    //         target_v.x(),target_v.y(),target_v.z(), 1);
+
     return mat;
+}
+
+
+osg::Vec3Array* NaturalCubicSpline::getVertices()
+{
+    return _vertices.get();
+}
+
+void NaturalCubicSpline::setExtrudeShape(BaseCurve* extrudeShape)
+{
+    _extrudeShape = extrudeShape;
 }

@@ -17,8 +17,6 @@ using namespace std;
 
 class NaturalCubicSpline: public BaseCurve
 {
-    private:
-         BaseCurve *_extrudeShape;
 
     public:
         NaturalCubicSpline(
@@ -74,10 +72,12 @@ class NaturalCubicSpline: public BaseCurve
         osg::Geometry* drawSpline();
         inline osg::Vec3 calcAtPercent(float percent);
         inline osg::Vec3 calcAt(int i, float t);
+
         float calcProfileAt(float t);
         float calcProfileAtPercent(float percent);
 
         osg::Geometry* drawTangentFrames();
+        osg::Geometry* drawTangentFrameAt(float t);
         osg::Geometry* drawTangentFrame(osg::Matrix mat);
         void calcTangentFrames();
         osg::Vec3 calcTangentAt(int i, float t);
@@ -97,12 +97,9 @@ class NaturalCubicSpline: public BaseCurve
         osg::ref_ptr<osg::Vec4Array> _knots;
         // Scheitelpunkte des Splines
         osg::ref_ptr<osg::Vec3Array> _vertices;
+        osg::Vec3Array* getVertices();
         osg::ref_ptr<osg::Vec3Array> _tangents;
         vector<osg::Matrix> _matrices;
-
-        vector<CubicPolynomial> _polynomialsX;
-        vector<CubicPolynomial> _polynomialsY;
-        vector<CubicPolynomial> _polynomialsZ;
 
         osg::ref_ptr<osg::Geometry> _geometry;
         osg::ref_ptr<osg::Geometry> _tangentCoordinateSysGeo;
@@ -111,7 +108,15 @@ class NaturalCubicSpline: public BaseCurve
         osg::Vec3 _firstFrameY;
         osg::Vec3 _firstFrameZ;
 
+        void setExtrudeShape(BaseCurve* extrudeShape);
+
     private:
         NaturalCubicSpline* _profile;
         vector<float> _profileScale;
+        BaseCurve *_extrudeShape;
+
+        vector<CubicPolynomial> _polynomialsX;
+        vector<CubicPolynomial> _polynomialsY;
+        vector<CubicPolynomial> _polynomialsZ;
+
 };
