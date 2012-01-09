@@ -70,7 +70,7 @@ osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int resolution,
                 vert *= profileScale[i];
 
             vert[3] = 1;
-            vert = matrices[i] * vert;
+            vert =  vert * matrices[i];
             verts->push_back(vert);
 
             texc->push_back(osg::Vec2((tex_width * j), (tex_height * i)));

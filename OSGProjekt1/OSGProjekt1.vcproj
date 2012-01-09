@@ -345,6 +345,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FlowerGroup.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\fparser\fparser.cc"
 				>
 			</File>
@@ -388,6 +392,10 @@
 			</File>
 			<File
 				RelativePath=".\CubicPolynomial.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FlowerGroup.h"
 				>
 			</File>
 			<File

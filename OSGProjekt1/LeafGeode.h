@@ -1,4 +1,5 @@
 #include <osg/Geode>
+#include <osg/Depth>
 #include <osgDB/ReadFile>
 #include "NaturalCubicSpline.h"
 #include <iostream>

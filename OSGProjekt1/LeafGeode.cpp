@@ -34,9 +34,19 @@ inline void LeafGeode::setTexture(string imagePath)
 
         osg::StateSet* state = getOrCreateStateSet();
         state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-
+        
         state->setMode(GL_BLEND, osg::StateAttribute::ON);
+
         osg::BlendFunc* blend = new osg::BlendFunc;
-        blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_DST_ALPHA);
+        blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+        // state->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
+        // state->setMode( GL_DEPTH_TEST, osg::StateAttribute::ON );
+
+        // osg::Depth* depth = new osg::Depth;
+        // depth->setWriteMask( false );
+        // state->setAttributeAndModes( depth, osg::StateAttribute::ON );
+
+        // state->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
+        
     }
 }

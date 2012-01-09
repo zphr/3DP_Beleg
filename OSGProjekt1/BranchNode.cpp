@@ -243,7 +243,10 @@ osg::Group* BranchNode::buildLeaves()
         float t = (*sp_verts)[i].y();
         transVec.push_back( new osg::MatrixTransform());
 
-        transVec[transVec.size()-1]->setMatrix(_spline.calcFrameAt(t));
+        transVec[transVec.size()-1]->postMult(
+            osg::Matrix::rotate(osg::DegreesToRadians(144.0*i), 0,0,1) );
+
+        transVec[transVec.size()-1]->postMult(_spline.calcFrameAt(t));
         transVec[transVec.size()-1]->addChild(_leavesGeodes[0]);
         group->addChild(transVec[transVec.size()-1]);
     }

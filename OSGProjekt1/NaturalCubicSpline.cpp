@@ -113,9 +113,9 @@ osg::Vec3Array* NaturalCubicSpline::getFrameVectors(int n, int stepping)
     {
         osg::Matrix mat = _matrices[stepping * n];
 
-        vec_array->push_back(osg::Vec3(mat(0,0), mat(1,0), mat(2,0))); // X-Achse
-        vec_array->push_back(osg::Vec3(mat(0,1), mat(1,1), mat(2,1))); // Y-Achse
-        vec_array->push_back(osg::Vec3(mat(0,2), mat(1,2), mat(2,2))); // Z-Achse
+        vec_array->push_back(osg::Vec3(mat(0,0), mat(0,1), mat(0,2))); // X-Achse
+        vec_array->push_back(osg::Vec3(mat(1,0), mat(1,1), mat(1,2))); // Y-Achse
+        vec_array->push_back(osg::Vec3(mat(2,0), mat(2,1), mat(2,2))); // Z-Achse
     }
 
     return vec_array.release();
@@ -281,13 +281,13 @@ osg::Geometry* NaturalCubicSpline::drawTangentFrames()
         mat = _matrices[i];
 
         tangent_vertices->push_back(vec);
-        tangent_vertices->push_back(mat*x_axis);
+        tangent_vertices->push_back(x_axis*mat);
 
         tangent_vertices->push_back(vec);
-        tangent_vertices->push_back(mat*y_axis);
+        tangent_vertices->push_back(y_axis*mat);
 
         tangent_vertices->push_back(vec);
-        tangent_vertices->push_back(mat*z_axis);
+        tangent_vertices->push_back(z_axis*mat);
     }
 
     osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
@@ -312,16 +312,16 @@ osg::Geometry* NaturalCubicSpline::drawTangentFrame(osg::Matrix mat)
 
     osg::ref_ptr<osg::Vec4Array>tangent_vertices = new osg::Vec4Array;
 
-    vec = osg::Vec4( mat(0,3), mat(1,3), mat(2,3), 1 );
+    vec = osg::Vec4( mat(3,0), mat(3,1), mat(3,2), 1 );
 
     tangent_vertices->push_back(vec);
-    tangent_vertices->push_back(mat*x_axis);
+    tangent_vertices->push_back(x_axis*mat);
 
     tangent_vertices->push_back(vec);
-    tangent_vertices->push_back(mat*y_axis);
+    tangent_vertices->push_back(y_axis*mat);
 
     tangent_vertices->push_back(vec);
-    tangent_vertices->push_back(mat*z_axis);
+    tangent_vertices->push_back(z_axis*mat);
 
     osg::ref_ptr<osg::Geometry> tangent_geo = new osg::Geometry;
     tangent_geo->setVertexArray( tangent_vertices );
@@ -343,11 +343,10 @@ void NaturalCubicSpline::calcTangentFrames()
     (*_tangents)[0] = _firstFrameZ; // z
 
     osg::Matrix mat(
-            (*r)[0].x(), (*s)[0].x(), (*_tangents)[0].x(), (*_vertices)[0].x(),
-            (*r)[0].y(), (*s)[0].y(), (*_tangents)[0].y(), (*_vertices)[0].y(),
-            (*r)[0].z(), (*s)[0].z(), (*_tangents)[0].z(), (*_vertices)[0].z(),
-            0,           0,          0,       1
-            );
+        (*r)[0].x(),         (*r)[0].y(),         (*r)[0].z(),         0,
+        (*s)[0].x(),         (*s)[0].y(),         (*s)[0].z(),         0,
+        (*_tangents)[0].x(), (*_tangents)[0].y(), (*_tangents)[0].z(), 0,
+        (*_vertices)[0].x(), (*_vertices)[0].y(), (*_vertices)[0].z(), 1);
 
     _matrices.push_back(mat);
 
@@ -367,11 +366,10 @@ void NaturalCubicSpline::calcTangentFrames()
         s->push_back( (*_tangents)[i+1] ^ (*r)[i+1] );
 
         mat = osg::Matrix(
-                (*r)[i+1].x(), (*s)[i+1].x(), (*_tangents)[i+1].x(), (*_vertices)[i+1].x(),
-                (*r)[i+1].y(), (*s)[i+1].y(), (*_tangents)[i+1].y(), (*_vertices)[i+1].y(),
-                (*r)[i+1].z(), (*s)[i+1].z(), (*_tangents)[i+1].z(), (*_vertices)[i+1].z(),
-                0,           0,          0,       1
-                );
+            (*r)[i+1].x(),         (*r)[i+1].y(),         (*r)[i+1].z(),         0,
+            (*s)[i+1].x(),         (*s)[i+1].y(),         (*s)[i+1].z(),         0,
+            (*_tangents)[i+1].x(), (*_tangents)[i+1].y(), (*_tangents)[i+1].z(), 0,
+            (*_vertices)[i+1].x(), (*_vertices)[i+1].y(), (*_vertices)[i+1].z(), 1);
 
         _matrices.push_back(mat);
     }
@@ -597,7 +595,7 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
                 vert *= profileScale[i];
 
             vert[3] = 1;
-            vert = matrices[i] * vert;
+            vert =  vert * matrices[i];
 
             verts->push_back(vert);
             
@@ -790,18 +788,18 @@ osg::Matrix NaturalCubicSpline::calcFrameAt(float u)
     target_r =  osg::Vec3( rLi - v2 * (v2 * rLi) * (2/c2) );
     target_s = target_t ^ target_r;
 
-    osg::Matrix mat = osg::Matrix(
-            target_r.x(), target_s.x(), target_t.x(), target_v.x(),
-            target_r.y(), target_s.y(), target_t.y(), target_v.y(),
-            target_r.z(), target_s.z(), target_t.z(), target_v.z(),
-            0,           0,          0,       1
-    );
-
     // osg::Matrix mat = osg::Matrix(
-    //         target_r.x(),target_r.y(),target_r.z(), 0,
-    //         target_s.x(),target_s.y(),target_s.z(), 0,
-    //         target_t.x(),target_t.y(),target_t.z(), 0,
-    //         target_v.x(),target_v.y(),target_v.z(), 1);
+    //         target_r.x(), target_s.x(), target_t.x(), target_v.x(),
+    //         target_r.y(), target_s.y(), target_t.y(), target_v.y(),
+    //         target_r.z(), target_s.z(), target_t.z(), target_v.z(),
+    //         0,           0,          0,       1
+    // );
+
+    osg::Matrix mat = osg::Matrix(
+            target_r.x(),target_r.y(),target_r.z(), 0,
+            target_s.x(),target_s.y(),target_s.z(), 0,
+            target_t.x(),target_t.y(),target_t.z(), 0,
+            target_v.x(),target_v.y(),target_v.z(), 1);
 
     return mat;
 }
