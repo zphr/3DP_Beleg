@@ -1,6 +1,9 @@
 *~
 #$
 *.~polynomials~
+*.blend1
+*.blend2
+*.xcf
 *.cpp~
 *.swp
 *.h~
