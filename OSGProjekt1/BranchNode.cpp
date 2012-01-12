@@ -2,10 +2,11 @@
 
 
 BranchNode::BranchNode(BranchNode* parentBranch,
-        osg::ref_ptr<osg::Vec4Array> knots,
-        bool hasLeaves,
-        vector<osg::ref_ptr<LeafGeode>> leavesGeodes, 
-        int leavesCount)
+                       osg::ref_ptr<osg::Vec4Array> knots,
+                       bool hasLeaves,
+                       vector<osg::ref_ptr<LeafGeode>> leavesGeodes, 
+                       int leavesCount,
+                       int leavesLevelCount)
 {
     _parentBranch = parentBranch;
     _knots = new osg::Vec4Array( (*knots) );
@@ -13,45 +14,46 @@ BranchNode::BranchNode(BranchNode* parentBranch,
     _hasLeaves = hasLeaves;
     _leavesGeodes = leavesGeodes;
     _leavesCount = leavesCount;
+    _leavesLevelCount = leavesLevelCount;
 
     _geom = new osg::Geometry;
 }
 
-BranchNode::BranchNode(vector<osg::ref_ptr<LeafGeode>> leavesGeodes, int leavesCount)
+BranchNode::BranchNode(vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
+                       int leavesCount,
+                       int leavesLevelCount)
 {
-    _firstKnotParentIndex = 0;
+    _parentKnotIndex = 0;
     _parentBranch = 0;
     _knots = new osg::Vec4Array;
 
     _hasLeaves = false;
     _leavesGeodes = leavesGeodes;
     _leavesCount = leavesCount;
+    _leavesLevelCount = leavesLevelCount;
 
     _geom = new osg::Geometry;
-
-    _index = 0;
 }
 
 BranchNode::BranchNode(BranchNode* parentBranch,
-        osg::Vec4 start_knot,
-        int firstKnotParentIndex,
-        int index, 
-        vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
-        int leavesCount
-        )
+                       osg::Vec4 startKnot,
+                       int parentKnotIndex,
+                       vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
+                       int leavesCount,
+                       int leavesLevelCount
+                      )
 {
-    _firstKnotParentIndex = firstKnotParentIndex;
+    _parentKnotIndex = parentKnotIndex;
     _parentBranch = parentBranch;
     _knots = new osg::Vec4Array;
-    _knots->push_back(start_knot);
+    _knots->push_back(startKnot);
 
     _hasLeaves = false;
     _leavesGeodes = leavesGeodes;
     _leavesCount = leavesCount;
+    _leavesLevelCount = leavesLevelCount;
 
     _geom = new osg::Geometry;
-
-    _index = index;
 }
 
 BranchNode::~BranchNode()
@@ -64,10 +66,14 @@ BranchNode::~BranchNode()
     
 }
 
+int BranchNode::getLevel()
+{
+    return _level;
+}
+
 void BranchNode::deleteLastChild()
 {
-    delete _branchChildren.back();
-    _branchChildren.pop_back();
+    removeChild(getNumChildren()-1);
 }
 
 BranchNode* BranchNode::getParentBranch()
@@ -80,89 +86,17 @@ void BranchNode::addKnot(osg::Vec4 new_point)
     _knots->push_back(new_point);
 } 
 
-BranchNode* BranchNode::addChild(int index, int i)
+BranchNode* BranchNode::addChildBranch()
 {
     osg::Vec4 branching_knot = (*_knots)[_knots->getNumElements()-1];
-
-    _branchChildren.push_back( new BranchNode(this, branching_knot, index, i) );
-    return (_branchChildren[_branchChildren.size()-1]);
-}
-
-inline int BranchNode::getChildrenCount()
-{
-    return _branchChildren.size();
-}
-
-inline BranchNode* BranchNode::getChild(unsigned int n)
-{
-    if( n < (_branchChildren.size()) )
-         return _branchChildren[n];
-    else 
-         return 0;
-}
-
-inline vector<BranchNode*>* BranchNode::getChildrenPtr()
-{
-    return &_branchChildren;
-}
-
-void BranchNode::traverseChildNodesPerLevel(int level)
-{
-    vector<vector<BranchNode*>*> curr_children;
-    curr_children.push_back(&_branchChildren);
-    int l = 0;
-    level > 0 ? l = 0 : l = -2;
+    int parentKnotIndex = _knots->getNumElements()-1;
     
-    while(curr_children.size() && (l < level))
-    {
-        vector<vector<BranchNode*>*> new_curr_children;
-        
-        // Ausführen
-        for(int i=0; i < curr_children.size(); i++)
-        {
-            for(int j=0; j < curr_children[i]->size(); j++)
-            {
-                // Kinder der nächsten Ebene sammeln
-                if( (*(curr_children[i]))[j]->getChildrenCount() )
-                     curr_children.push_back( (*(curr_children[i]))[j]->getChildrenPtr() );
-            }
-        }
-
-        level > 0 ? l++ : l = -2;
-        curr_children = new_curr_children;
-    }
-}
-
-vector<vector<BranchNode*>*> BranchNode::getChildrenPerLevel(int level)
-{
-    vector<vector<BranchNode*>*> curr_children;
-    curr_children.push_back(&_branchChildren);
-    int l = 0, old_size = 0;
-
-    // level hat Standardwert von -1 -> alle Kinder holen; alles
-    // >0 nur bis zum jeweiligen Level Kinder abfragen
-    level > 0 ? l = 0 : l = -2;
-
-    old_size = curr_children.size();
-    do
-    {
-        for(int i=0; i < curr_children.size(); i++)
-        {
-            
-            for(int j=0; j < curr_children[i]->size(); j++)
-            {
-                // Kinder der nächsten Ebene sammeln
-                if( (*(curr_children[i]))[j]->getChildrenCount() )
-                     curr_children.push_back( (*(curr_children[i]))[j]->getChildrenPtr() );
-            }
-        }
-        level > 0 ? l++ : l = -2;
-        // sind noch neue Kinder hinzugekommen?
-        old_size = curr_children.size();
-    }
-    while((curr_children.size() != old_size) && (l < level));
-
-    return curr_children;
+    osg::ref_ptr<BranchNode> new_branch = new BranchNode(this,
+                                                         branching_knot,
+                                                         parentKnotIndex);
+    addChild( new_branch );
+    
+    return ( new_branch.release() );
 }
 
 int BranchNode::getKnotCount()
@@ -180,76 +114,75 @@ inline osg::Matrix BranchNode::getKnotFrame(int n)
     return _spline.getKnotFrame(n);
 }
 
-osg::Geometry* BranchNode::calcBranch()
+void BranchNode::buildBranch()
+{
+    calcBranch();
+    buildLeaves();
+}
+
+void BranchNode::calcBranch()
 {
     _spline.setKnots( _knots.get() );
 
-    // cout << _firstKnotParentIndex << endl;
+    // cout << _parentKnotIndex << endl;
     if(_parentBranch)
-    {
-        _spline.setFirstFrame(
-            _parentBranch->getKnotFrameVectors( _firstKnotParentIndex )
-        );
-    }
-
-    _spline.calcSpline();
-    _geom = _spline.drawExtrudedCylinder(3, 0.15f);
-
-    return _geom.get();
-}
-
-void BranchNode::calcBranches(osg::ref_ptr<osg::Geode> geode)
-{
-    vector<vector<BranchNode*>*> curr_children = getChildrenPerLevel();
-
-    geode->addDrawable(calcBranch());
-
-    for(int i=0; i < curr_children.size(); i++)
-    {
-        for(int j=0; j < (*(curr_children[i])).size(); j++)
         {
-            geode->addDrawable(
-                (*(curr_children[i]))[j]->calcBranch()
+            _spline.setFirstFrame(
+                _parentBranch->getKnotFrameVectors( _parentKnotIndex )
             );
         }
-    }
+
+    _spline.calcSpline();
+    osg::ref_ptr<osg::Geode> gd = new osg::Geode;
+    gd->addDrawable(_spline.drawExtrudedCylinder(3, 0.15f));
+    addChild( gd.release() );
 }
+
+// void BranchNode::buildBranches()
+// {
+//     vector<vector<BranchNode*>*> curr_children = getChildrenPerLevel();
+//     int leavesLevels = curr_children.size() - _leavesLevelCount;
+
+//     buildBranch();
+
+//     for(int i=0; i < curr_children.size(); i++)
+//         {
+//             for(int j=0; j < (*(curr_children[i])).size(); j++)
+//                 {
+//                     (*(curr_children[i]))[j]->buildBranch();
+//                 }
+//         }
+// }
 
 bool BranchNode::hasLeaves()
 {
     return _hasLeaves;
 }
 
-osg::Group* BranchNode::buildLeaves()
+void BranchNode::buildLeaves()
 {
+    if(_leavesGeodes.size() == 0)
+        return;
+
+    float distributionAngle = osg::DegreesToRadians(144.0);
+    
     osg::ref_ptr<osg::Vec4Array> spline_points = new osg::Vec4Array;
-    spline_points->push_back(osg::Vec4(0,0,0,1));
+    spline_points->push_back(osg::Vec4(0.2,0.2,0,1));
     // spline_points->push_back(osg::Vec4(0.5,0.25,0,1));
-    spline_points->push_back(osg::Vec4(1,1,0,1));
+    spline_points->push_back(osg::Vec4(1,0.9,0,1));
 
     NaturalCubicSpline spline(spline_points, _leavesCount);
-
     osg::ref_ptr<osg::Vec3Array> sp_verts(spline.getVertices());
 
-    osg::ref_ptr<osg::Group> group = new osg::Group;
-
-    vector<osg::ref_ptr<osg::MatrixTransform>> transVec;
-
-    if(_leavesGeodes.size() == 0)
-         return 0;
-
     for(int i=0; i < sp_verts->getNumElements(); i++)
-    {
-        float t = (*sp_verts)[i].y();
-        transVec.push_back( new osg::MatrixTransform());
+        {
+            float t = (*sp_verts)[i].y();
+            
+            osg::ref_ptr<osg::MatrixTransform> transMat = new osg::MatrixTransform();
 
-        transVec[transVec.size()-1]->postMult(
-            osg::Matrix::rotate(osg::DegreesToRadians(144.0*i), 0,0,1) );
-
-        transVec[transVec.size()-1]->postMult(_spline.calcFrameAt(t));
-        transVec[transVec.size()-1]->addChild(_leavesGeodes[0]);
-        group->addChild(transVec[transVec.size()-1]);
-    }
-
-    return group.release();
+            transMat->postMult(osg::Matrix::rotate(distributionAngle*i, 0,0,1));
+            transMat->postMult(_spline.calcFrameAt(t));
+            transMat->addChild(_leavesGeodes[0]);
+            addChild(transMat.release());
+        }
 }

@@ -77,30 +77,60 @@ void FlowerTest(osg::ref_ptr<osg::Group> &root)
 {
     osg::ref_ptr<osg::Geode> gd = new osg::Geode;
 
+    // osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
+    // line_points->push_back(osg::Vec4(-0.5,-1,0,1));
+    // line_points->push_back(osg::Vec4(0, 0,0,1));
+    // line_points->push_back(osg::Vec4(-0.5,1,0,1));
+
     osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
-    line_points->push_back(osg::Vec4(-0.5,-1,0,1));
-    line_points->push_back(osg::Vec4(0, 0,0,1));
-    line_points->push_back(osg::Vec4(-0.5,1,0,1));
+    line_points->push_back(osg::Vec4(-0.75,  -1,0,1));
+    line_points->push_back(osg::Vec4(-0.15,-0.5,0,1));
+    line_points->push_back(osg::Vec4(   0,   0,0,1));
+    line_points->push_back(osg::Vec4(-0.15, 0.5,0,1));
+    line_points->push_back(osg::Vec4(-0.75,   1,0,1));
 
     NaturalCubicSpline line_spline(line_points, 1);
     gd->addDrawable( line_spline.drawSpline() );
 
     osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
     profile_points->push_back(osg::Vec4(0,0,0,1));
-    profile_points->push_back(osg::Vec4(0.25,0,0.55,1));
+    profile_points->push_back(osg::Vec4(0.3,0,0.55,1));
     profile_points->push_back(osg::Vec4(0,0,1,1));
 
     NaturalCubicSpline profile_spline(profile_points,
                                       12,
-                                      new NaturalCubicSpline(line_points, 1)
-        );
-
+                                      new NaturalCubicSpline(line_points, 1));
+    
     osg::ref_ptr<LeafGeode> leaf = new LeafGeode(profile_spline, 3, 0.5, "bluete1.png");
     //root->addChild(leaf);
     vector<osg::ref_ptr<LeafGeode>> leaf_list;
     leaf_list.push_back( leaf );
+    
+    osg::ref_ptr<osg::Node> innen = osgDB::readNodeFile("3d/Bluete_innen.obj");
+    root->addChild( innen );
+    
+    osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+    osg::ref_ptr<osg::Image> image = osgDB::readImageFile("bluete1.png");
+    texture->setImage(image.get());
 
-    osg::ref_ptr<FlowerGroup> flower = new FlowerGroup(gd, gd, 0, 0, 0, leaf_list, 0.1, 0.5, 5);
+    osg::StateSet* state = innen->getOrCreateStateSet();
+    state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+    
+    state->setMode(GL_BLEND, osg::StateAttribute::ON);
+    osg::BlendFunc* blend = new osg::BlendFunc;
+    blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+        
+    state->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+    osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+	
+    alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
+    state->setAttributeAndModes( alphaFunc, osg::StateAttribute::ON );
+    
+    osg::ref_ptr<FlowerGroup> flower = new FlowerGroup("3d/Bluete.obj",
+                                                       "",
+                                                       0, 0, 0,
+                                                       leaf_list,
+                                                       0.2, 1.0, 5);
     root->addChild( flower );
 
 }
@@ -147,10 +177,9 @@ void LeafTest(osg::ref_ptr<osg::Group> &root)
     // transVec->addChild( leaf.get() );
     // root->addChild(transVec);
 
-    BranchNode branch (0, branch_points, true, leaf_list, 6);
-    gd->addDrawable( branch.calcBranch() );
-    root->addChild(gd);
-    root->addChild(branch.buildLeaves());
+    osg::ref_ptr<BranchNode> branch = new BranchNode(0, branch_points, true, leaf_list, 6);
+    branch->buildBranch();
+    root->addChild( branch.get() );
 
 }
 
@@ -193,10 +222,10 @@ void extrudeSplineAlongSpline(osg::ref_ptr<osg::Group> &root)
     root->addChild(gd);
 }
 
-void PlantTest(osg::ref_ptr<osg::Group> &root)
+void PlantStringTest(osg::ref_ptr<osg::Group> &root)
 {
 
-    // map<char, string> rules;
+    map<char, string> rules;
 
     // rules['A'] = "F[{(x/1.456)A(x/1.456)][}(x/1.456)A(x/1.456)][&(x/1.456)A(x/1.456)][^(x/1.456)A(x/1.456)]";
     
@@ -214,21 +243,20 @@ void PlantTest(osg::ref_ptr<osg::Group> &root)
     // rules['S'] = "F[&+(-45)A][&+(45)A]{(8)FS";
     // rules['A'] = "^F[&FA&F][^FA^F]F";
 
-    // rules['S'] = "[A(x)]+(66)[A(1.0)]+(66)[A(1.0)]+(66)[A(1.0)]F";
-    // rules['A'] = "&(45)F(x/1.456)^F(x/1.456)^F(x/1.456)[S]";
+    rules['S'] = "[A(x)]+(66)[A(1.0)]+(66)[A(1.0)]+(66)[A(1.0)]F";
+    rules['A'] = "&(45)F(x/1.456)^F(x/1.456)^F(x/1.456)[S]";
 
     // // Test-Baum ausm Buch
     // rules['S'] = "F[&S][^S]FS";
     // rules['F'] = "FF";
     
-    // float delta = 22.5;
-    // osg::Vec4 dist (0.0, 0.0, 5.0, 1.0);
-    // osg::Matrix rot_mat;
+    float delta = 22.5;
+    osg::Vec4 dist (0.0, 0.0, 5.0, 1.0);
+    osg::Matrix rot_mat;
 
-    // LSysPlant plant(5, delta, rules, rules['S'],  dist, rot_mat);
+    LSysPlant plant(5, delta, rules, rules['S'],  dist, rot_mat);
 
-    // plant.drawPlant(root);
-
+    root->addChild( plant.buildPlant() );
 }
 
 void DynamicTest(osg::ref_ptr<osg::Group> &root)
@@ -247,10 +275,11 @@ int main( int argc, char** argv)
 
     osg::ref_ptr<osg::Group> root = new osg::Group;
 
-    //extrudeSplineAlongSpline( root );
+    // extrudeSplineAlongSpline( root );
     // LeafTest( root );
     FlowerTest( root );
     // DynamicTest( root );
+    // PlantStringTest( root );
 
     osgViewer::Viewer viewer;
 

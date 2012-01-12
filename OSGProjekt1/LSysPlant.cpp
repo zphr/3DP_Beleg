@@ -17,8 +17,8 @@ LSysPlant::LSysPlant(
     _rotMatrix(rotMatrix),
     _variable(variable)
 {
+    _firstBranch = new BranchNode();
     osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
-    _branches.push_back( new_v4array ); 
     _vertices = new osg::Vec4Array;
     _vertices->push_back( osg::Vec4(0.0, 0.0, 0.0, 1.0) );
     _indices = new osg::DrawElementsUInt( GL_LINES );
@@ -26,20 +26,8 @@ LSysPlant::LSysPlant(
 
 LSysPlant::~LSysPlant(void)
 { 
-    for(int i = 0; i < _branches.size(); i++)
-        _branches[i].release();
-
+    _firstBranch.release();
     _vertices.release();
-
-    vector<vector<BranchNode*>*> curr_children = _firstBranch.getChildrenPerLevel();
-
-    for(int i=0; i < curr_children.size(); i++)
-    {
-        for(int j=0; j < (*(curr_children[i])).size(); j++)
-        {
-            delete (*(curr_children[i]))[j];
-        }
-    }
 
 }
 
@@ -93,15 +81,13 @@ void LSysPlant::generatePlant()
 {
     osg::Vec4 vec(0,0,0,1);
     osg::ref_ptr<osg::Vec4Array> branch_array = new osg::Vec4Array;
-    int branch = 0, index = 0, old_index = -1, new_i = 0;
+    int branch = 0, level = 0,  new_i = 0;
     string function_str = "";
     double f_result = 1.0;
     float angle = 0.0;
 
-    _firstBranch.addKnot( vec );
-    BranchNode* currentBranch = &_firstBranch;
-
-    _branches[0]->push_back( vec );
+    _firstBranch->addKnot( vec );
+    BranchNode* currentBranch = _firstBranch;
 
     for(int i = 0; i < _startWord.length(); i++)
     {
@@ -207,9 +193,7 @@ void LSysPlant::generatePlant()
                 new_item._parentBranch = currentBranch;
                 // Index des Vektors übergeben den Eltern- und
                 // Kind-Ast gemeinsam haben
-                currentBranch = currentBranch->addChild(
-                    currentBranch->getKnotCount()-1, index);
-
+                currentBranch = currentBranch->addChildBranch();
 
                 _stack.push_back(new_item);
                 break;
@@ -296,43 +280,14 @@ string LSysPlant::getParanthesesContent(int str_pos, string str, int &para_end)
     return "";
 }
 
-void LSysPlant::drawPlant(osg::ref_ptr<osg::Geode> &node)
+osg::Group* LSysPlant::buildPlant()
 {
     generatePlantWord();
     generatePlant();
 
-    osg::ref_ptr<osg::Geometry> line_loop = new osg::Geometry;
-    line_loop->setVertexArray( _vertices.get() );
-    line_loop->addPrimitiveSet( _indices.get() );
-    osgUtil::SmoothingVisitor::smooth( *line_loop );
-
-    vector<NaturalCubicSpline> branch_splines;
-    int element_count = 0;
-
-    _firstBranch.calcBranches( node );
+    osg::ref_ptr<BranchVisitor> branch_visitor = new BranchVisitor();
+    branch_visitor->apply(*(_firstBranch.get()));
     
-    // for(int i = 0; i < _branches.size(); i++)
-    // {
-    //     element_count = (*_branches[i]).getNumElements();
-        
-    //     if(element_count == 1)
-    //     {
-    //         //printf("Branch %d had just 1 vertex!\n", i);
-    //         continue;
-    //     }
-
-    //     //for(int j = 0; j < element_count; j++)
-    //     //{
-    //         //printf("%d %f %f %f\n", i, 
-    //                 //(*_branches[i])[j].x(),
-    //                 //(*_branches[i])[j].y(),
-    //                 //(*_branches[i])[j].z());
-    //     //}
-
-    //     node->addDrawable(  NaturalCubicSpline(_branches[i],3).drawExtrudedCylinder(3, 0.05f) );
-    //     //node->addDrawable(  NaturalCubicSpline(_branches[i]).drawSpline() );
-    // }
-
-    /*node->addDrawable( line_loop.get() );*/
+    return _firstBranch.get();
 }
 

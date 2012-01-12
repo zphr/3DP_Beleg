@@ -9,40 +9,39 @@
 #pragma once
 using namespace std;
 
-class BranchNode
+class BranchNode: public osg::Group
 {
     public:
         BranchNode(BranchNode* parentBranch,
                    osg::ref_ptr<osg::Vec4Array> knots,
                    bool hasLeaves = false,
                    vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
-                   int leavesCount = 0
+                   int leavesCount = 0,
+                   int leavesLevelCount = -1
                     );
+        
         BranchNode(
                 vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
-                int leavesCount = 0
+                int leavesCount = 0,
+                int leavesLevelCount = -1
                 );
+        
         BranchNode(BranchNode* parentBranch,
-                   osg::Vec4 start_knot,
-                   int firstKnotParentIndex,
-                   int index,
+                   osg::Vec4 startKnot,
+                   int parentKnotIndex,
                    vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
-                   int leavesCount = 0
+                   int leavesCount = 0,
+                   int leavesLevelCount = -1
                    );
+        
         ~BranchNode();
 
         BranchNode* getParentBranch();
 
-        /* Traversierung der Baumstruktur */
-        void traverseChildNodesPerLevel(int level=-1);
-        vector<vector<BranchNode*>*> getChildrenPerLevel(int level=-1);
-
         /* Kind-Methoden */
         void deleteLastChild();
         inline int getChildrenCount();
-        BranchNode* addChild(int index, int i);
-        inline BranchNode* getChild(unsigned int n);
-        inline vector<BranchNode*>* getChildrenPtr();
+        BranchNode* addChildBranch();
 
         /* Knoten-Methoden */
         int getKnotCount();
@@ -51,26 +50,31 @@ class BranchNode
         inline osg::Vec3Array* getKnotFrameVectors(int n);
 
         /* Ast-Geometrie Berechnung */
-        osg::Geometry* calcBranch();
-        void calcBranches(osg::ref_ptr<osg::Geode> geode);
+        void buildBranch();
+        /* void buildBranches(); */
+        
+        void calcBranch();
+        void buildLeaves();
+        bool hasLeaves();
 
         int _index;
-
-        bool hasLeaves();
-        osg::Group* buildLeaves();
+        int getLevel();
 
     private:
+        int _level;             /* Ebene des Astes im Baum */
+        
         BranchNode* _parentBranch;
-        vector<BranchNode*> _branchChildren;
 
         NaturalCubicSpline _spline;
         osg::ref_ptr<osg::Vec4Array> _knots;
 
-        int _firstKnotParentIndex;
+        int _parentKnotIndex;
 
         osg::ref_ptr<osg::Geometry> _geom;
 
         bool _hasLeaves;
         vector<osg::ref_ptr<LeafGeode>> _leavesGeodes;
         int _leavesCount;
+        int _leavesLevelCount;  /* welche Kind-Ast-Level haben
+                                   Blätter */
 };

@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="osgd.lib osgGAd.lib osgDBd.lib osgViewerd.lib osgTextd.lib osgUtild.lib OpenThreadsd.lib"
+				AdditionalDependencies="osgd.lib osgGAd.lib osgDBd.lib osgViewerd.lib osgTextd.lib osgUtild.lib OpenThreadsd.lib osgAnimationd.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="C:\OpenSceneGraph_301D\lib"
 				GenerateDebugInformation="true"
@@ -337,6 +337,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\BranchVisitor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CircleCurve.cpp"
 				>
 			</File>
@@ -384,6 +388,10 @@
 			</File>
 			<File
 				RelativePath=".\BranchNode.h"
+				>
+			</File>
+			<File
+				RelativePath=".\BranchVisitor.h"
 				>
 			</File>
 			<File
