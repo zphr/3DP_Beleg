@@ -9,10 +9,12 @@
 #include "NaturalCubicSpline.h"
 #include "LeafGeode.h"
 #include "FlowerGroup.h"
+#include "RoseFlower.h"
 #include <string>
 #include <map>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#pragma once
 using namespace std;
 
 #include <osg/MatrixTransform>
@@ -128,9 +130,9 @@ void FlowerTest(osg::ref_ptr<osg::Group> &root)
     
     osg::ref_ptr<FlowerGroup> flower = new FlowerGroup("3d/Bluete.obj",
                                                        "",
-                                                       0, 0, 0,
                                                        leaf_list,
-                                                       0.2, 1.0, 5);
+                                                       0.2, 1.0,
+                                                       137.2);
     root->addChild( flower );
 
 }
@@ -177,7 +179,7 @@ void LeafTest(osg::ref_ptr<osg::Group> &root)
     // transVec->addChild( leaf.get() );
     // root->addChild(transVec);
 
-    osg::ref_ptr<BranchNode> branch = new BranchNode(0, branch_points, true, leaf_list, 6);
+    osg::ref_ptr<BranchNode> branch = new BranchNode(0, branch_points, 0, true, leaf_list, 6);
     branch->buildBranch();
     root->addChild( branch.get() );
 
@@ -243,7 +245,7 @@ void PlantStringTest(osg::ref_ptr<osg::Group> &root)
     // rules['S'] = "F[&+(-45)A][&+(45)A]{(8)FS";
     // rules['A'] = "^F[&FA&F][^FA^F]F";
 
-    rules['S'] = "[A(x)]+(66)[A(1.0)]+(66)[A(1.0)]+(66)[A(1.0)]F";
+    rules['S'] = "[A(x)]+(66)[A(1.0)]+(66)[A(1.0)]+(66)[A(1.0)]F@";
     rules['A'] = "&(45)F(x/1.456)^F(x/1.456)^F(x/1.456)[S]";
 
     // // Test-Baum ausm Buch
@@ -254,7 +256,7 @@ void PlantStringTest(osg::ref_ptr<osg::Group> &root)
     osg::Vec4 dist (0.0, 0.0, 5.0, 1.0);
     osg::Matrix rot_mat;
 
-    LSysPlant plant(5, delta, rules, rules['S'],  dist, rot_mat);
+    LSysPlant plant(5, delta, rules, rules['S'], new RoseFlower(), dist, rot_mat);
 
     root->addChild( plant.buildPlant() );
 }
@@ -277,9 +279,12 @@ int main( int argc, char** argv)
 
     // extrudeSplineAlongSpline( root );
     // LeafTest( root );
-    FlowerTest( root );
+    // FlowerTest( root );
     // DynamicTest( root );
-    // PlantStringTest( root );
+    PlantStringTest( root );
+    
+    // osg::ref_ptr<RoseFlower> rose = new RoseFlower();
+    // root->addChild( rose );
 
     osgViewer::Viewer viewer;
 

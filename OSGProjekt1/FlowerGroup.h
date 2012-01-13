@@ -22,44 +22,43 @@ class FlowerGroup: public osg::Group
   public:
     
     FlowerGroup(
-        string body_file,
-        string stamen_file,
-        int stamenCount,
-        float stamenStartRadius,
-        float stamenEndRadius,
+        string bodyFile,
+        string insideFile,
         vector<osg::ref_ptr<LeafGeode>> petalGeodes,
         float petalStartRadius,
         float petalEndRadius,
-        int petalCount);
+        float distributionAngle,
+        float time = 6.0,
+        unsigned int samples = 8);
     
     FlowerGroup(
         osg::ref_ptr<osg::Node> body,
-        osg::ref_ptr<osg::Node> stamen,      /* stamen -> Staubblätter */
-        int stamenCount,
-        float stamenStartRadius,
-        float stamenEndRadius,
+        osg::ref_ptr<osg::Node> inside,
         vector<osg::ref_ptr<LeafGeode>> petalGeodes,
         float petalStartRadius,
         float petalEndRadius,
-        int petalCount);
+        float distributionAngle,
+        float time = 6.0,
+        unsigned int samples = 8);
 
     ~FlowerGroup();
 
-    void buildFlower();
-    void calcAnimation(unsigned int index,
-                              float time,
-                              unsigned int samples,
-                              osgAnimation::MatrixKeyframeContainer* quatContainer);
+  protected:
+    FlowerGroup();
+    
+    virtual void buildFlower();
+    virtual void calcAnimation(unsigned int index,
+                               osg::MatrixTransform* trans);
 
-  private:
     osg::ref_ptr<osg::Node> _body;
-
-    osg::ref_ptr<osg::Node> _stamen;
-    int _stamenCount;
-    float _stamenStartRadius, _stamenEndRadius;
+    osg::ref_ptr<osg::Node> _inside;
 
     vector<osg::ref_ptr<LeafGeode>> _petalGeodes;
     int _petalCount;
     float _petalStartRadius, _petalEndRadius;
+    float _distributionAngle;
+    osg::ref_ptr<osgAnimation::BasicAnimationManager> _manager;
+    unsigned int _samples;
+    float _time;
 
 };

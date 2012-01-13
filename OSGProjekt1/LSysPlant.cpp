@@ -2,22 +2,25 @@
 using namespace std;
 
 LSysPlant::LSysPlant(
-        unsigned int repeats,
-        float delta,
-        map<char,string> rules,
-        string startWord,
-        osg::Vec4 distanceVector = osg::Vec4(),
-        osg::Matrix rotMatrix = osg::Matrix(),
-        string variable)
-: _repeats(repeats),
-    _delta(delta),
-    _rules(rules),
-    _startWord(startWord),
-    _distanceVector(distanceVector),
-    _rotMatrix(rotMatrix),
-    _variable(variable)
+    unsigned int repeats,
+    float delta,
+    map<char,string> rules,
+    string startWord,
+    FlowerGroup* flower,
+    osg::Vec4 distanceVector = osg::Vec4(),
+    osg::Matrix rotMatrix = osg::Matrix(),
+    string variable)
+    : _repeats(repeats),
+      _delta(delta),
+      _rules(rules),
+      _startWord(startWord),
+      _distanceVector(distanceVector),
+      _rotMatrix(rotMatrix),
+      _variable(variable)
 {
-    _firstBranch = new BranchNode();
+    _flower = flower;
+    _firstBranch = new BranchNode(_flower.get());
+    
     osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
     _vertices = new osg::Vec4Array;
     _vertices->push_back( osg::Vec4(0.0, 0.0, 0.0, 1.0) );
@@ -109,10 +112,10 @@ void LSysPlant::generatePlant()
                     double variables[1] = { 1.0 };
 
                     if( // Funktion für die Rotations-Wörter auswerten
-                            (_startWord[i] == '+') || (_startWord[i] == '-') ||
-                            (_startWord[i] == '&') || (_startWord[i] == '^') ||
-                            (_startWord[i] == '{') || (_startWord[i] == '}')
-                      )
+                        (_startWord[i] == '+') || (_startWord[i] == '-') ||
+                        (_startWord[i] == '&') || (_startWord[i] == '^') ||
+                        (_startWord[i] == '{') || (_startWord[i] == '}')
+                    )
                     {
                         variables[0] = _delta;
                         angle = _fparser.Eval(variables);
@@ -129,97 +132,102 @@ void LSysPlant::generatePlant()
 
         switch(_startWord[i])
         { 
-            case 'F':
-                {
-                    vec += (_rotMatrix * (_distanceVector * (float)f_result));
-                    vec[3] = 1.0;
+        case 'F':
+        {
+            vec += (_rotMatrix * (_distanceVector * (float)f_result));
+            vec[3] = 1.0;
 
-                    currentBranch->addKnot( vec );
+            currentBranch->addKnot( vec );
 
-                    break;
-                }
-            case 'f':
-                {
-                    vec += (_rotMatrix * (_distanceVector * (float)f_result));
-                    vec[3] = 1.0;
-                    break;
-                }
-            case '+':
-                {
-                    RotMatZ(angle, _rotMatrix);
-                    break;
-                }
-            case '-':
-                {
-                    RotMatZ(-angle, _rotMatrix);
-                    break;
-                }
-            case '&':
-                {
-                    RotMatY(angle, _rotMatrix);
-                    break;
-                }
-            case '^':
-                {
-                    RotMatY(-angle, _rotMatrix);
-                    break;
-                }
-            case '{':
-                {
-                    RotMatX(angle, _rotMatrix);
-                    break;
-                }
-            case '}':
-                {
-                    RotMatX(-angle, _rotMatrix);
-                    break;
-                }
-            case '|':
-                {
-                    // TODO: Rotation der Matrix muss invertiert werden!
-                    RotMatY(180.0, _rotMatrix);
-                    break;
-                }
-            // Stack Push 
-            case '[':
-            {
-                struct PlantStackElement new_item;
-                new_item._posVector      = vec;
-                new_item._rotMatrix      = _rotMatrix;
-                new_item._distanceVector = _distanceVector;
+            break;
+        }
+        case 'f':
+        {
+            vec += (_rotMatrix * (_distanceVector * (float)f_result));
+            vec[3] = 1.0;
+            break;
+        }
+        case '+':
+        {
+            RotMatZ(angle, _rotMatrix);
+            break;
+        }
+        case '-':
+        {
+            RotMatZ(-angle, _rotMatrix);
+            break;
+        }
+        case '&':
+        {
+            RotMatY(angle, _rotMatrix);
+            break;
+        }
+        case '^':
+        {
+            RotMatY(-angle, _rotMatrix);
+            break;
+        }
+        case '{':
+        {
+            RotMatX(angle, _rotMatrix);
+            break;
+        }
+        case '}':
+        {
+            RotMatX(-angle, _rotMatrix);
+            break;
+        }
+        case '|':
+        {
+            // TODO: Rotation der Matrix muss invertiert werden!
+            RotMatY(180.0, _rotMatrix);
+            break;
+        }
+        case '@':
+        {
+            currentBranch->addFlower(osg::Matrix(_rotMatrix).translate(vec.x(), vec.y(), vec.z()));
+            break;
+        }
+        // Stack Push 
+        case '[':
+        {
+            struct PlantStackElement new_item;
+            new_item._posVector      = vec;
+            new_item._rotMatrix      = _rotMatrix;
+            new_item._distanceVector = _distanceVector;
                 
-                // ---------------------------------------- Tree Version
+            // ---------------------------------------- Tree Version
 
-                new_item._parentBranch = currentBranch;
-                // Index des Vektors übergeben den Eltern- und
-                // Kind-Ast gemeinsam haben
-                currentBranch = currentBranch->addChildBranch();
+            new_item._parentBranch = currentBranch;
+            // Index des Vektors übergeben den Eltern- und
+            // Kind-Ast gemeinsam haben
+            currentBranch = currentBranch->addChildBranch();
 
-                _stack.push_back(new_item);
-                break;
-            }
-            // Stack Pop
-            case ']':
+            _stack.push_back(new_item);
+            break;
+        }
+        // Stack Pop
+        case ']':
+        {
+            int size        = _stack.size()-1;
+            vec             = _stack[size]._posVector; // vorherige Position
+            _rotMatrix      = _stack[size]._rotMatrix; // vorherige Rotation
+            _distanceVector = _stack[size]._distanceVector; // vorheriger Richtungsvektor
+
+            // wenn der aktuelle Ast nur 1 oder 0 Knoten hat
+            // dann muss er gelöscht werden
+            if( currentBranch->getKnotCount() <= 1)
             {
-                int size        = _stack.size()-1;
-                vec             = _stack[size]._posVector; // vorherige Position
-                _rotMatrix      = _stack[size]._rotMatrix; // vorherige Rotation
-                _distanceVector = _stack[size]._distanceVector; // vorheriger Richtungsvektor
-
-                // wenn der aktuelle Ast nur 1 oder 0 Knoten hat
-                // dann muss er gelöscht werden
-                if( currentBranch->getKnotCount() <= 1)
-                {
-                    BranchNode* parent_branch = currentBranch->getParentBranch();
-                    parent_branch->deleteLastChild();
-                }
-
-                 // Zeiger auf den Eltern-Ast
-                currentBranch = _stack[size]._parentBranch;
-                
-                _stack.pop_back();
-                break;
+                BranchNode* parent_branch = currentBranch->getParentBranch();
+                parent_branch->deleteLastChild();
             }
+
+            // Zeiger auf den Eltern-Ast
+            currentBranch = _stack[size]._parentBranch;
+                
+            _stack.pop_back();
+            break;
+        }
         }
 
         if (new_i != 0)
@@ -235,7 +243,7 @@ inline void LSysPlant::RotMatX(float angle, osg::Matrix &mat)
 {
     osg::Matrix mRotationMatrix;  
     mRotationMatrix.makeRotate( osg::DegreesToRadians(angle),
-            osg::Vec3f( 1.0f, 0.0f, 0.0f ) );  // X axis
+                                osg::Vec3f( 1.0f, 0.0f, 0.0f ) );  // X axis
 
     mat = mat * mRotationMatrix;
 }
@@ -244,7 +252,7 @@ inline void LSysPlant::RotMatY(float angle, osg::Matrix &mat)
 {
     osg::Matrix mRotationMatrix;  
     mRotationMatrix.makeRotate( osg::DegreesToRadians(angle),
-            osg::Vec3f( 0.0f, 1.0f, 0.0f ) );  
+                                osg::Vec3f( 0.0f, 1.0f, 0.0f ) );  
 
     mat = mat * mRotationMatrix;
 }
@@ -253,8 +261,8 @@ inline void LSysPlant::RotMatZ(float angle, osg::Matrix &mat)
 {
     osg::Matrix mRotationMatrix;  
     mRotationMatrix.makeRotate(
-            osg::DegreesToRadians(angle), 
-            osg::Vec3f( 0.0f, 0.0f, 1.0f ) );  
+        osg::DegreesToRadians(angle), 
+        osg::Vec3f( 0.0f, 0.0f, 1.0f ) );  
 
     mat = mat * mRotationMatrix;
 }

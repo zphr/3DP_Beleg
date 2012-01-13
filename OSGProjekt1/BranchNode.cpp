@@ -3,6 +3,7 @@
 
 BranchNode::BranchNode(BranchNode* parentBranch,
                        osg::ref_ptr<osg::Vec4Array> knots,
+                       FlowerGroup* flower,
                        bool hasLeaves,
                        vector<osg::ref_ptr<LeafGeode>> leavesGeodes, 
                        int leavesCount,
@@ -17,9 +18,12 @@ BranchNode::BranchNode(BranchNode* parentBranch,
     _leavesLevelCount = leavesLevelCount;
 
     _geom = new osg::Geometry;
+    
+    _flower = flower;
 }
 
-BranchNode::BranchNode(vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
+BranchNode::BranchNode(FlowerGroup* flower,
+                       vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
                        int leavesCount,
                        int leavesLevelCount)
 {
@@ -33,15 +37,17 @@ BranchNode::BranchNode(vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
     _leavesLevelCount = leavesLevelCount;
 
     _geom = new osg::Geometry;
+    
+    _flower = flower;
 }
 
 BranchNode::BranchNode(BranchNode* parentBranch,
                        osg::Vec4 startKnot,
                        int parentKnotIndex,
+                       FlowerGroup* flower,
                        vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
                        int leavesCount,
-                       int leavesLevelCount
-                      )
+                       int leavesLevelCount)
 {
     _parentKnotIndex = parentKnotIndex;
     _parentBranch = parentBranch;
@@ -54,6 +60,8 @@ BranchNode::BranchNode(BranchNode* parentBranch,
     _leavesLevelCount = leavesLevelCount;
 
     _geom = new osg::Geometry;
+    
+    _flower = flower;
 }
 
 BranchNode::~BranchNode()
@@ -93,7 +101,8 @@ BranchNode* BranchNode::addChildBranch()
     
     osg::ref_ptr<BranchNode> new_branch = new BranchNode(this,
                                                          branching_knot,
-                                                         parentKnotIndex);
+                                                         parentKnotIndex,
+                                                         _flower.get());
     addChild( new_branch );
     
     return ( new_branch.release() );
@@ -138,21 +147,16 @@ void BranchNode::calcBranch()
     addChild( gd.release() );
 }
 
-// void BranchNode::buildBranches()
-// {
-//     vector<vector<BranchNode*>*> curr_children = getChildrenPerLevel();
-//     int leavesLevels = curr_children.size() - _leavesLevelCount;
-
-//     buildBranch();
-
-//     for(int i=0; i < curr_children.size(); i++)
-//         {
-//             for(int j=0; j < (*(curr_children[i])).size(); j++)
-//                 {
-//                     (*(curr_children[i]))[j]->buildBranch();
-//                 }
-//         }
-// }
+void BranchNode::addFlower(osg::Matrix &mat)
+{
+    if(_flower.get() == 0)
+        return;
+    
+    osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform(mat);
+    trans->setMatrix( mat );
+    trans->addChild( _flower.get() );
+    addChild( trans.release() );
+}
 
 bool BranchNode::hasLeaves()
 {

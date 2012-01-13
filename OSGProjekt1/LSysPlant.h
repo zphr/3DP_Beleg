@@ -6,6 +6,7 @@
 #include "./fparser/fparser.hh"
 #include "BranchNode.h"
 #include "BranchVisitor.h"
+#include "FlowerGroup.h"
 #include "NaturalCubicSpline.h"
 
 #include <osg/ShapeDrawable>
@@ -31,6 +32,7 @@ class LSysPlant
             float delta,
             map<char,string> rules,
             string startWord,
+            FlowerGroup* flower,
             osg::Vec4 distanceVector,
             osg::Matrix rotMatrix,
             string variable = "x");
@@ -60,6 +62,7 @@ class LSysPlant
   osg::ref_ptr<osg::DrawElementsUInt> _indices;
   
   FunctionParser _fparser;
-
+  
+  osg::ref_ptr<FlowerGroup> _flower;
 };
 

@@ -376,6 +376,10 @@
 				RelativePath=".\NaturalCubicSpline.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\RoseFlower.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Headerdateien"
@@ -420,6 +424,10 @@
 			</File>
 			<File
 				RelativePath=".\NaturalCubicSpline.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RoseFlower.h"
 				>
 			</File>
 		</Filter>
