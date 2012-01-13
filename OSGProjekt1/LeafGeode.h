@@ -11,22 +11,24 @@ using namespace std;
 class LeafGeode: public osg::Geode
 {
     public:
+        
         LeafGeode(NaturalCubicSpline spline,
-                int resolution=3,
-                float scale=1.0f,
-                string imagePath="");
+                  int resolution=3,
+                  float scale=1.0f,
+                  string imagePath="");
 
         LeafGeode(NaturalCubicSpline spline,
-                NaturalCubicSpline extrudeShape,
-                int resolution=3,
-                float scale=1.0f,
-                string imagePath="");
+                  NaturalCubicSpline extrudeShape,
+                  int resolution=3,
+                  float scale=1.0f,
+                  string imagePath="");
 
         ~LeafGeode();
 
         inline void setTexture(string imagePath);
 
-    private:
+    protected:
+        LeafGeode();
         NaturalCubicSpline _spline;
         NaturalCubicSpline _extrudeShape;
 

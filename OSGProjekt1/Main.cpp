@@ -10,6 +10,7 @@
 #include "LeafGeode.h"
 #include "FlowerGroup.h"
 #include "RoseFlower.h"
+#include "RoseLeaf.h"
 #include <string>
 #include <map>
 #define _USE_MATH_DEFINES
@@ -140,46 +141,43 @@ void FlowerTest(osg::ref_ptr<osg::Group> &root)
 void LeafTest(osg::ref_ptr<osg::Group> &root)
 {
 
-    osg::ref_ptr<osg::Geode> gd = new osg::Geode;
+    
+    // osg::ref_ptr<osg::Geode> gd = new osg::Geode;
 
-    osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
-    line_points->push_back(osg::Vec4(0.25,-1,0,1));
-    line_points->push_back(osg::Vec4(0, 0,0,1));
-    line_points->push_back(osg::Vec4(0.25,1,0,1));
+    // osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
+    // line_points->push_back(osg::Vec4(0.25,-1,0,1));
+    // line_points->push_back(osg::Vec4(0, 0,0,1));
+    // line_points->push_back(osg::Vec4(0.25,1,0,1));
 
-    NaturalCubicSpline line_spline(line_points, 1);
-    gd->addDrawable( line_spline.drawSpline() );
+    // NaturalCubicSpline line_spline(line_points, 1);
+    // gd->addDrawable( line_spline.drawSpline() );
 
-    osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
-    profile_points->push_back(osg::Vec4(0,0,0,1));
-    profile_points->push_back(osg::Vec4(1,0,0,1));
+    // osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
+    // profile_points->push_back(osg::Vec4(0,0,0,1));
+    // profile_points->push_back(osg::Vec4(1,0,0,1));
 
-    NaturalCubicSpline profile_spline(profile_points,
-                                      12,
-                                      new NaturalCubicSpline(line_points, 1)
-                                      );
+    // NaturalCubicSpline profile_spline(profile_points,
+    //                                   12,
+    //                                   new NaturalCubicSpline(line_points, 1)
+    //                                   );
 
-    osg::ref_ptr<LeafGeode> leaf = new LeafGeode(profile_spline, 3, 0.5, "blatt.png");
-    //root->addChild(leaf);
+    // osg::ref_ptr<LeafGeode> leaf = new LeafGeode(profile_spline, 3, 0.5, "blatt.png");
+
+    osg::ref_ptr<RoseLeaf> rose_leaf = new RoseLeaf();
     vector<osg::ref_ptr<LeafGeode>> leaf_list;
-    leaf_list.push_back( leaf );
+    leaf_list.push_back( rose_leaf.release() );
 
     osg::ref_ptr<osg::Vec4Array> branch_points = new osg::Vec4Array;
     branch_points->push_back(osg::Vec4(0,0,0,1));
     branch_points->push_back(osg::Vec4(0,0,2,1));
     branch_points->push_back(osg::Vec4(2,0,5,1));
 
-    // NaturalCubicSpline branch_spline(branch_points, 3);
-    // gd->addDrawable( branch_spline.drawTangentFrameAt( 0.5 ) );
-
-    // osg::ref_ptr<osg::MatrixTransform> transVec = new osg::MatrixTransform;
-    // osg::Matrix mat = branch_spline.calcFrameAt(0.5);
-    // transVec->setMatrix( branch_spline.calcFrameAt(0.5) );
-    // transVec->setMatrix( osg::Matrix::translate( 25.0f, 0.0f, 0.0f) );
-    // transVec->addChild( leaf.get() );
-    // root->addChild(transVec);
-
-    osg::ref_ptr<BranchNode> branch = new BranchNode(0, branch_points, 0, true, leaf_list, 6);
+    osg::ref_ptr<BranchNode> branch = new BranchNode(0,
+                                                     branch_points,
+                                                     0,
+                                                     true,
+                                                     leaf_list,
+                                                     6);
     branch->buildBranch();
     root->addChild( branch.get() );
 
@@ -278,22 +276,14 @@ int main( int argc, char** argv)
     osg::ref_ptr<osg::Group> root = new osg::Group;
 
     // extrudeSplineAlongSpline( root );
-    // LeafTest( root );
+    LeafTest( root );
     // FlowerTest( root );
     // DynamicTest( root );
-    PlantStringTest( root );
-    
-    // osg::ref_ptr<RoseFlower> rose = new RoseFlower();
-    // root->addChild( rose );
+    // PlantStringTest( root );
 
     osgViewer::Viewer viewer;
-
-    // osgUtil::CullVisitor::apply(*(root.get()));
-
-    // osg::ref_ptr<osgUtil::CullVisitor> cv = osgUtil::CullVisitor::create();
-    // root->accept(*(cv.get()));
     viewer.setSceneData( root );
-
+    
     return viewer.run();
 }
 

@@ -1,6 +1,14 @@
 #include "LeafGeode.h"
 
-LeafGeode::LeafGeode(NaturalCubicSpline spline, int resolution, float scale, string imagePath)
+LeafGeode::LeafGeode()
+{
+
+}
+
+LeafGeode::LeafGeode(NaturalCubicSpline spline,
+                     int resolution,
+                     float scale,
+                     string imagePath)
 {
     _spline = spline;
 

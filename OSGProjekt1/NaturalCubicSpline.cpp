@@ -581,7 +581,7 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
 
     osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
     float tex_width  = 1.0 / (resolution-1);
-    float tex_height = 1.0 / elements;
+    float tex_height = 1.0 / (elements-1);
 
     for(int i=0; i < elements; i++)
     {

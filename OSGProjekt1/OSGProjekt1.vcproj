@@ -380,6 +380,10 @@
 				RelativePath=".\RoseFlower.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\RoseLeaf.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Headerdateien"
@@ -428,6 +432,10 @@
 			</File>
 			<File
 				RelativePath=".\RoseFlower.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RoseLeaf.h"
 				>
 			</File>
 		</Filter>

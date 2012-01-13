@@ -8,6 +8,7 @@ void BranchVisitor::apply( osg::Group& group )
     {
         cout << "level: " << _level << endl;
         branch->buildBranch();
+
     }
     
     _level++;
