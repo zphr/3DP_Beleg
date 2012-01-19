@@ -349,6 +349,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FlowerBucket.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FlowerGroup.cpp"
 				>
 			</File>
@@ -408,6 +412,10 @@
 			</File>
 			<File
 				RelativePath=".\CubicPolynomial.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FlowerBucket.h"
 				>
 			</File>
 			<File

@@ -88,24 +88,6 @@ osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int resolution,
                 face_indices->push_back( (i+1) * resolution + (j + 1));
                 face_indices->push_back( (i+1) * resolution + j);
             }
-            
-            // if(i < (elements-1))
-            // {
-            //     if((i*resolution + j +1)%resolution != 0)
-            //     {
-            //         face_indices->push_back(i*resolution + j);
-            //         face_indices->push_back(i*resolution + j +1);
-            //         face_indices->push_back(i*resolution + j +resolution+1);
-            //         face_indices->push_back(i*resolution + j +resolution);
-            //     }              
-            //     else           
-            //     {              
-            //         face_indices->push_back(i*resolution + j);
-            //         face_indices->push_back(i*resolution + j -(resolution-1));
-            //         face_indices->push_back(i*resolution + j +1);            
-            //         face_indices->push_back(i*resolution + j +resolution);
-            //     }
-            // }
         }
     }
 

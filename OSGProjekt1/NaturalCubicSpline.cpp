@@ -571,7 +571,7 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
 
     // die Auflösung wird für ein NaturalCubicSpline zwischen den
     // Segmenten angegeben, daher muss noch die absolute Auflösung
-    // geholten werden!
+    // geholt werden!
     resolution = shape_verts->getNumElements();
 
     osg::Vec4 vert;
@@ -727,7 +727,6 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
     }
 
     osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
-
     geom->setVertexArray( verts.get() );
     geom->setNormalArray( normals.get() );
     geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
