@@ -1,9 +1,18 @@
+#pragma once
 #include <iostream>
+#include <osg/MatrixTransform>
+#include <osg/Point>
+#include <osg/PointSprite>
+#include <osg/Texture2D>
+#include <osg/BlendFunc>
+#include <osg/PolygonMode>
 #include <osg/ShapeDrawable>
 #include <osg/Geometry>
 #include <osg/Geode>
 #include <osgDB/ReadFile>
 #include <osgViewer/Viewer>
+#include <osgUtil/Tessellator>
+#include <osgUtil/SmoothingVisitor>
 #include <fstream>
 #include "LSysPlant.h"
 #include "NaturalCubicSpline.h"
@@ -12,19 +21,139 @@
 #include "FlowerBucket.h"
 #include "RoseFlower.h"
 #include "RoseLeaf.h"
+#include "FencePart.h"
 #include <string>
 #include <map>
 #define _USE_MATH_DEFINES
 #include <math.h>
-#pragma once
 using namespace std;
 
-#include <osg/MatrixTransform>
-#include <osg/Point>
-#include <osg/PointSprite>
-#include <osg/Texture2D>
-#include <osg/BlendFunc>
-#include <osg/PolygonMode>
+class ModelController : public osgGA::GUIEventHandler
+{
+public:
+    ModelController(osg::ref_ptr<osg::Geometry> &geom, osg::Group* root) {
+        _geom = geom.get();
+        _vertices = static_cast<osg::Vec3Array*>(geom->getVertexArray() );
+        _root = root;
+    }
+    
+    ~ModelController()
+        {
+            _geom.release();
+        }
+    
+    virtual bool handle( const osgGA::GUIEventAdapter& ea,
+                         osgGA::GUIActionAdapter& aa );
+protected:
+    osg::ref_ptr<osg::Geometry> _geom;
+    osg::Vec3Array* _vertices;
+    osg::Group* _root;
+    bool _turn;
+};
+
+bool ModelController::handle( const osgGA::GUIEventAdapter& ea,
+                              osgGA::GUIActionAdapter& aa )
+{
+    switch ( ea.getEventType() )
+    {
+    case osgGA::GUIEventAdapter::RELEASE:
+        
+        if(ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
+           ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL )
+        {
+            cout << ea.getX() << " " << ea.getY() << endl;
+            
+            _vertices->push_back(osg::Vec3(ea.getX(), ea.getY(), 0));
+            _geom->setPrimitiveSet(0, new osg::DrawArrays(GL_LINE_LOOP, 0, _vertices->getNumElements()) );
+        
+            _geom->dirtyDisplayList();
+            _geom->dirtyBound();
+        }
+        break;
+    case osgGA::GUIEventAdapter::KEYDOWN:
+        switch ( ea.getKey() )
+        {
+        case 'a': case 'A':
+        {
+            osg::ref_ptr<FencePart> fence_part = new FencePart(_geom);
+            _root->addChild( fence_part.release() );
+            break;
+        }
+        case 'd': case 'D':
+        {
+            osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+            _geom->setVertexArray( vertices.get() );    
+            _geom->setPrimitiveSet(0, new osg::DrawArrays(GL_LINE_LOOP, 0, vertices->getNumElements()) );
+            _vertices = static_cast<osg::Vec3Array*>(_geom->getVertexArray() );
+
+            _geom->dirtyDisplayList();
+            _geom->dirtyBound();
+        }
+        }
+    }
+    return false;
+}
+
+void DrawLineTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
+{
+
+    int window_height = 1050;
+    int window_width  = 1680;
+
+    // Projection node for defining view frustrum for HUD:
+    osg::Projection* HUDProjectionMatrix = new osg::Projection;
+
+    // Initialize the projection matrix for viewing everything we
+    // will add as descendants of this node. Use screen coordinates
+    // to define the horizontal and vertical extent of the projection
+    // matrix. Positions described under this node will equate to
+    // pixel coordinates.
+    HUDProjectionMatrix->setMatrix(osg::Matrix::ortho2D(0,window_width,0,window_height));
+      
+    // For the HUD model view matrix use an identity matrix:
+    osg::MatrixTransform* HUDModelViewMatrix = new osg::MatrixTransform;
+    HUDModelViewMatrix->setMatrix(osg::Matrix::identity());
+
+    // Make sure the model view matrix is not affected by any transforms
+    // above it in the scene graph:
+    HUDModelViewMatrix->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+
+    // Add the HUD projection matrix as a child of the root node
+    // and the HUD model view matrix as a child of the projection matrix
+    // Anything under this node will be viewed using this projection matrix
+    // and positioned with this model view matrix.
+    root->addChild(HUDProjectionMatrix);
+    HUDProjectionMatrix->addChild(HUDModelViewMatrix);
+
+    osg::ref_ptr<osg::Geometry> geom = new osg::Geometry();
+
+    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+    geom->setVertexArray( vertices.get() );    
+    geom->addPrimitiveSet( new osg::DrawArrays(GL_LINE_LOOP, 0, vertices->getNumElements()) );
+
+    osg::ref_ptr<osg::Geode> gd = new osg::Geode;
+    gd->addDrawable( geom.get() );
+
+    HUDModelViewMatrix->addChild( gd.get() );
+
+    // Create and set up a state set using the texture from above:
+    osg::StateSet* HUDStateSet = new osg::StateSet();
+    gd->setStateSet(HUDStateSet);
+
+    // Disable depth testing so geometry is draw regardless of depth values
+    // of geometry already draw.
+    HUDStateSet->setMode(GL_DEPTH_TEST,osg::StateAttribute::OFF);
+    HUDStateSet->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
+
+    // Need to make sure this geometry is draw last. RenderBins are handled
+    // in numerical order so set bin number to 11
+    HUDStateSet->setRenderBinDetails( 11, "RenderBin");
+
+    osg::ref_ptr<osg::Vec4Array> points = new osg::Vec4Array();
+    osg::ref_ptr<ModelController> ctrler = new ModelController(geom, root.get());
+    viewer.addEventHandler( ctrler.get() );
+    // viewer.getCamera()->setAllowEventFocus( false );
+}
 
 osg::Geometry* createQuad()
 {
@@ -141,29 +270,6 @@ void FlowerTest(osg::ref_ptr<osg::Group> &root)
 
 void LeafTest(osg::ref_ptr<osg::Group> &root)
 {
-
-
-    // osg::ref_ptr<osg::Geode> gd = new osg::Geode;
-
-    // osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
-    // line_points->push_back(osg::Vec4(0.25,-1,0,1));
-    // line_points->push_back(osg::Vec4(0, 0,0,1));
-    // line_points->push_back(osg::Vec4(0.25,1,0,1));
-
-    // NaturalCubicSpline line_spline(line_points, 1);
-    // gd->addDrawable( line_spline.drawSpline() );
-
-    // osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
-    // profile_points->push_back(osg::Vec4(0,0,0,1));
-    // profile_points->push_back(osg::Vec4(1,0,0,1));
-
-    // NaturalCubicSpline profile_spline(profile_points,
-    //                                   12,
-    //                                   new NaturalCubicSpline(line_points, 1)
-    //                                   );
-
-    // osg::ref_ptr<LeafGeode> leaf = new LeafGeode(profile_spline, 3, 0.5, "blatt.png");
-
     osg::ref_ptr<RoseLeaf> rose_leaf = new RoseLeaf();
     vector<osg::ref_ptr<LeafGeode>> leaf_list;
     leaf_list.push_back( rose_leaf.release() );
@@ -176,9 +282,7 @@ void LeafTest(osg::ref_ptr<osg::Group> &root)
     osg::ref_ptr<BranchNode> branch = new BranchNode(0,
                                                      branch_points,
                                                      0,
-                                                     true,
-                                                     leaf_list,
-                                                     6);
+                                                     leaf_list);
     branch->buildBranch();
     root->addChild( branch.get() );
 
@@ -204,7 +308,7 @@ void extrudeSplineAlongSpline(osg::ref_ptr<osg::Group> &root)
     NaturalCubicSpline profile_spline(profile_points ,
                                       12,
                                       new NaturalCubicSpline(line_points, 1)
-                                      );
+                                     );
 
     osg::StateSet* st = gd->getOrCreateStateSet();
 
@@ -252,10 +356,24 @@ void PlantStringTest(osg::ref_ptr<osg::Group> &root)
     // rules['F'] = "FF";
 
     float delta = 22.5;
-    osg::Vec4 dist (0.0, 0.0, 5.0, 1.0);
+    osg::Vec4 dist (0.0, 0.0, 1.0, 1.0);
     osg::Matrix rot_mat;
 
-    LSysPlant plant(5, delta, rules, rules['S'], new RoseFlower(), dist, rot_mat);
+    osg::ref_ptr<RoseLeaf> rose_leaf = new RoseLeaf();
+    vector<osg::ref_ptr<LeafGeode>> leaf_list;
+    leaf_list.push_back( rose_leaf.release() );
+
+    osg::ref_ptr<osg::Vec4Array> spline_points = new osg::Vec4Array;
+    spline_points->push_back(osg::Vec4(0.0,0.0,0,1));
+    spline_points->push_back(osg::Vec4(0.8,1.3,0,1));
+    spline_points->push_back(osg::Vec4(1,0.0,0,1));
+    NaturalCubicSpline spline(spline_points, 3);
+        
+    LSysPlant plant(3, delta, dist, rot_mat,
+                    new RoseFlower(),
+                    leaf_list, 0, 5, 144.0,
+                    spline, NaturalCubicSpline(),
+                    rules, rules['S']);
 
     root->addChild( plant.buildPlant() );
 }
@@ -271,9 +389,9 @@ void DynamicTest(osg::ref_ptr<osg::Group> &root)
     root->addChild( gd );
 }
 
-void KuebelTest(osg::ref_ptr<osg::Group> &root)
+void KuebelTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer* viewer)
 {
-    osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
+    osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket(viewer);
 
     root->addChild( flower_bucket );
 }
@@ -455,16 +573,32 @@ int main( int argc, char** argv)
 {
 
     osg::ref_ptr<osg::Group> root = new osg::Group;
+    osgViewer::Viewer viewer;
+
+    osg::ref_ptr<osg::Vec3Array> origin_verts = new osg::Vec3Array();
+    origin_verts->push_back( osg::Vec3(1,0,0) );
+    origin_verts->push_back( osg::Vec3(-1,0,0) );
+    origin_verts->push_back( osg::Vec3(0,1,0) );
+    origin_verts->push_back( osg::Vec3(0,-1,0) );
+    origin_verts->push_back( osg::Vec3(0,0,1) );
+    origin_verts->push_back( osg::Vec3(0,0,-1) );
+    osg::ref_ptr<osg::Geometry>  origin_geom  = new osg::Geometry();
+    origin_geom->setVertexArray( origin_verts.get() );
+    origin_geom->addPrimitiveSet(new osg::DrawArrays(GL_LINES, 0, origin_verts->getNumElements()) );
+
+    osg::ref_ptr<osg::Geode> gd = new osg::Geode;
+    gd->addDrawable( origin_geom );
+    root->addChild( gd );
 
     // extrudeSplineAlongSpline( root );
     // LeafTest( root );
     // FlowerTest( root );
     // DynamicTest( root );
     // PlantStringTest( root );
-    //KuebelTestOld( root );
-    KuebelTest( root );
+    // KuebelTestOld( root );
+    KuebelTest( root, &viewer );
+    // DrawLineTest(root, viewer);
 
-    osgViewer::Viewer viewer;
     viewer.setSceneData( root );
 
     return viewer.run();

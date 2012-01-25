@@ -4,22 +4,36 @@ using namespace std;
 LSysPlant::LSysPlant(
     unsigned int repeats,
     float delta,
+    osg::Vec4 distanceVector,
+    osg::Matrix rotMatrix,
+    FlowerGroup* flower,
+    vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
+    unsigned int leavesLevel,
+    unsigned int leavesCount,
+    float leavesDistributionAngle,
+    NaturalCubicSpline leavesProfile,
+    NaturalCubicSpline leavesSpline,
     map<char,string> rules,
     string startWord,
-    FlowerGroup* flower,
-    osg::Vec4 distanceVector = osg::Vec4(),
-    osg::Matrix rotMatrix = osg::Matrix(),
     string variable)
     : _repeats(repeats),
-      _delta(delta),
-      _rules(rules),
-      _startWord(startWord),
-      _distanceVector(distanceVector),
-      _rotMatrix(rotMatrix),
-      _variable(variable)
+   _delta(delta),
+   _rules(rules),
+   _startWord(startWord),
+   _distanceVector(distanceVector),
+   _rotMatrix(rotMatrix),
+   _variable(variable),
+   _leavesCount(leavesCount),
+   _leavesDistributionAngle(leavesDistributionAngle),
+   _leavesProfile(leavesProfile),
+   _leavesSpline(leavesSpline)
 {
+    
+    _leavesGeodes = leavesGeodes;
+    _leavesLevel = leavesLevel;
+    
     _flower = flower;
-    _firstBranch = new BranchNode(_flower.get());
+    _firstBranch = new BranchNode(_flower.get(), _leavesGeodes);
     
     osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
     _vertices = new osg::Vec4Array;
@@ -121,7 +135,7 @@ void LSysPlant::generatePlant()
                         angle = _fparser.Eval(variables);
                     }
                     // Funktion für die Translation auswerten
-                    else if((_startWord[i] == 'F') || (_startWord[i] == 'F'))
+                    else if((_startWord[i] == 'F') || (_startWord[i] == 'f'))
                     {
                         variables[0] = _distanceVector.z();
                         f_result = _fparser.Eval(variables);
@@ -293,7 +307,13 @@ osg::Group* LSysPlant::buildPlant()
     generatePlantWord();
     generatePlant();
 
-    osg::ref_ptr<BranchVisitor> branch_visitor = new BranchVisitor();
+    osg::ref_ptr<BranchVisitor> branch_visitor =
+        new BranchVisitor(_leavesLevel,
+                          _leavesCount,
+                          _leavesDistributionAngle,
+                          &_leavesProfile,
+                          &_leavesSpline);
+
     branch_visitor->apply(*(_firstBranch.get()));
     
     return _firstBranch.get();

@@ -349,6 +349,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FencePart.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\FencePartController.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FlowerBucket.cpp"
 				>
 			</File>
@@ -412,6 +420,14 @@
 			</File>
 			<File
 				RelativePath=".\CubicPolynomial.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FencePart.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FencePartController.h"
 				>
 			</File>
 			<File

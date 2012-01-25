@@ -10,11 +10,18 @@ class BranchVisitor : public osg::NodeVisitor
   
 public:
   
- BranchVisitor() : _level(0)
-    { setTraversalMode(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN); }
-  
+  BranchVisitor(unsigned int leavesLevel,
+                unsigned int leavesCount = 5,
+                float distributionAngle = 144.0,
+                NaturalCubicSpline* profileSpline = 0,
+                NaturalCubicSpline* leavesSpline = 0);
   virtual void apply( osg::Group& group );
     
  protected:
   unsigned int _level;
+  unsigned int _leavesLevel;
+  unsigned int _leavesCount;
+  float _distributionAngle;
+  NaturalCubicSpline* _profileSpline;
+  NaturalCubicSpline* _leavesSpline;
 };

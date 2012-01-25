@@ -68,7 +68,7 @@ class NaturalCubicSpline: public BaseCurve
 
         void calcPolynomialsXYZ();
         vector<CubicPolynomial> calcPolynomials(float *coords, int count);
-        void calcSpline();
+        void calcSpline(int resolution = -1);
         osg::Geometry* drawSpline();
         inline osg::Vec3 calcAtPercent(float percent);
         inline osg::Vec3 calcAt(int i, float t);
@@ -90,6 +90,8 @@ class NaturalCubicSpline: public BaseCurve
         osg::Geometry* drawExtrudedCylinder(unsigned int resolution=3, float scale=1.0f);
 
         osg::Matrix calcFrameAt(float u);
+        template <class T> float getLength(osg::ref_ptr<T> vertices);
+        template <class T> vector<float> mapLengthForUV(osg::ref_ptr<T> vertices);
         
         // Auflösung des Splines
         int _curveSteps;
@@ -110,7 +112,7 @@ class NaturalCubicSpline: public BaseCurve
 
         void setExtrudeShape(BaseCurve* extrudeShape);
 
-    private:
+    protected:
         NaturalCubicSpline* _profile;
         vector<float> _profileScale;
         BaseCurve *_extrudeShape;

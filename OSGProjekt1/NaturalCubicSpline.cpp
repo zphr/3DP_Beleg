@@ -1,5 +1,6 @@
 #include "NaturalCubicSpline.h"
 
+
 NaturalCubicSpline::NaturalCubicSpline(
         int curveSteps,
         BaseCurve *extrudeShape,
@@ -464,9 +465,12 @@ float NaturalCubicSpline::calcProfileAt(float t)
     return y;
 }
 
-void NaturalCubicSpline::calcSpline()
+void NaturalCubicSpline::calcSpline(int resolution)
 {
     calcPolynomialsXYZ();
+
+    if(resolution < 0)
+        resolution = _curveSteps;
 
     if(_vertices)
         _vertices.release();
@@ -487,9 +491,9 @@ void NaturalCubicSpline::calcSpline()
     float u = 0.0f;
     for(int i=0; i < _knots->getNumElements()-1; i++)
     {
-        for(int j = 1; j <=_curveSteps; j++)
+        for(int j = 1; j <=resolution; j++)
         {
-            u = j / (float) _curveSteps;
+            u = j / (float) resolution;
 
             _vertices->push_back( calcAt(i, u) );
             _tangents->push_back( calcTangentAt(i, u) );
@@ -558,10 +562,10 @@ inline osg::Vec3 NaturalCubicSpline::convVec4To3(const osg::Vec4 &vec4)
 }
 
 osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
-                                                   float scale,
-                                                   const vector<osg::Matrix> &matrices,
-                                                   const osg::ref_ptr<osg::Vec3Array> &vertices,
-                                                   const vector<float> &profileScale)
+                                                      float scale,
+                                                      const vector<osg::Matrix> &matrices,
+                                                      const osg::ref_ptr<osg::Vec3Array> &vertices,
+                                                      const vector<float> &profileScale)
 {
 
     unsigned int elements = vertices->getNumElements();
@@ -582,11 +586,17 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
     osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
     float tex_width  = 1.0 / (resolution-1);
     float tex_height = 1.0 / (elements-1);
+    
+    vector<float> v_coords = mapLengthForUV(vertices);
+    vector<float> u_coords = mapLengthForUV(shape_verts);
 
     for(int i=0; i < elements; i++)
     {
+        tex_height = v_coords[i];
+        
         for(int j=0; j < shape_verts->getNumElements(); j++)
         {
+            tex_width = u_coords[j];
             
             vert = osg::Vec4((*shape_verts)[j]);
             vert *= scale;
@@ -599,7 +609,9 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
 
             verts->push_back(vert);
             
-            texc->push_back(osg::Vec2(tex_width * j, tex_height * i));
+            // texc->push_back(osg::Vec2(tex_width * j, tex_height *
+            // i));
+            texc->push_back(osg::Vec2(tex_width, tex_height));
 
             if((i < (elements-1)) && (j < (resolution-1)))
             {
@@ -803,6 +815,33 @@ osg::Matrix NaturalCubicSpline::calcFrameAt(float u)
     return mat;
 }
 
+template <class T> vector<float> NaturalCubicSpline::mapLengthForUV(osg::ref_ptr<T> vertices)
+{
+    float length = getLength(vertices);
+    float length_percent = 0.0;
+    vector<float> vert_u_vec;
+    vert_u_vec.push_back(0.0);
+    
+    for(int i=1; i < vertices->getNumElements(); i++)
+    {
+        length_percent += ((*vertices)[i] - (*vertices)[i-1]).length()/length;
+        vert_u_vec.push_back(length_percent);
+    }
+    
+    return vert_u_vec;
+}
+
+template <class T> float NaturalCubicSpline::getLength(osg::ref_ptr<T> vertices)
+{
+    float length = 0;
+
+    for(int i=1; i < vertices->getNumElements(); i++)
+    {
+        length += ((*vertices)[i] - (*vertices)[i-1]).length();
+    }
+
+    return length;
+}
 
 osg::Vec3Array* NaturalCubicSpline::getVertices()
 {

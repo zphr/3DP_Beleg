@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <stdlib.h>
 #include <osg/ShapeDrawable>
@@ -5,15 +6,17 @@
 #include <osg/Geometry>
 #include <osg/Geode>
 #include <osgDB/ReadFile>
-#pragma once
+#include "FencePart.h"
 using namespace std;
 
 class FlowerBucket: public osg::Group
 {
   public:
-    FlowerBucket();
+    FlowerBucket(osgViewer::Viewer* viewer);
     ~FlowerBucket();
     void buildBucket();
+
+    void setFencePart(osg::Geode* gd);
 
   protected:
     void buildFence();
@@ -24,7 +27,8 @@ class FlowerBucket: public osg::Group
                                  float h_offset=0.0);
 
     void buildEarth();
-    
+
+    osg::ref_ptr<osg::Node> _fencePartModel;
     osg::ref_ptr<osg::Node> _fencePart;
     float _fenceWidth;
     float _fenceHeight;
@@ -36,6 +40,4 @@ class FlowerBucket: public osg::Group
     unsigned int _fenceCountY;
 
     osg::ref_ptr<osg::Vec3Array> _verts;
-
-
 };

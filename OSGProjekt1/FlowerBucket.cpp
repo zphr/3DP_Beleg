@@ -1,8 +1,9 @@
 #include "FlowerBucket.h"
 
-FlowerBucket::FlowerBucket()
+FlowerBucket::FlowerBucket(osgViewer::Viewer* viewer)
 {
-    _fencePart = osgDB::readNodeFile("3d/latte.obj");
+    _fencePartModel = osgDB::readNodeFile("3d/latte.obj");
+    _fencePart = _fencePart.get();
 
     _fenceOffset = 0.08;
     _fenceArrayOffset = _fenceOffset;
@@ -18,6 +19,9 @@ FlowerBucket::FlowerBucket()
     _verts->push_back(osg::Vec3(_fenceCountX * _fenceWidth, 0, 0));
     _verts->push_back(osg::Vec3(_fenceCountX * _fenceWidth, _fenceCountY * _fenceWidth, 0));
     _verts->push_back(osg::Vec3(0, _fenceCountY * _fenceWidth, 0));
+
+    // osg::ref_ptr<FencePartController> ctrler = new FencePartController(this);
+    // viewer->addEventHandler( ctrler.get() );
 
     buildBucket();
     buildFence();
@@ -62,13 +66,13 @@ inline void FlowerBucket::placeFence(bool alongY)
         mat.postMult(osg::Matrix().rotate(angle, osg::Z_AXIS));
         mat.postMult(osg::Matrix().translate(trans_v * i));
         trans->setMatrix( mat );
-        trans->addChild( _fencePart.get() );
+        trans->addChild( _fencePartModel.get() );
         addChild( trans.release() );
 
         trans = new osg::MatrixTransform();
         mat.postMult(osg::Matrix().translate(trans_rot_v));
         trans->setMatrix( mat );
-        trans->addChild( _fencePart.get() );
+        trans->addChild( _fencePartModel.get() );
         addChild( trans.release() );
     }
 }
@@ -308,4 +312,10 @@ void FlowerBucket::buildEarth()
     osg::ref_ptr<osg::Geode> gd = new osg::Geode;
     gd->addDrawable( geom.release() );
     addChild( gd.release() );
+}
+
+
+void FlowerBucket::setFencePart(osg::Geode* gd)
+{
+    _fencePart = gd;
 }

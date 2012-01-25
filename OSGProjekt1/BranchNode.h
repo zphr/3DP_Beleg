@@ -17,29 +17,18 @@ class BranchNode: public osg::Group
         BranchNode(BranchNode* parentBranch,
                    osg::ref_ptr<osg::Vec4Array> knots,
                    FlowerGroup* flower,
-                   bool hasLeaves = false,
-                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
-                   int leavesCount = 0,
-                   int leavesLevelCount = -1
-                    );
+                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>());
         
         BranchNode(FlowerGroup* flower,
-                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
-                   int leavesCount = 0,
-                   int leavesLevelCount = -1
-                   );
+                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>());
         
         BranchNode(BranchNode* parentBranch,
                    osg::Vec4 startKnot,
                    int parentKnotIndex,
                    FlowerGroup* flower,
-                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>(),
-                   int leavesCount = 0,
-                   int leavesLevelCount = -1
-                   );
+                   vector<osg::ref_ptr<LeafGeode>> leavesGeodes = vector<osg::ref_ptr<LeafGeode>>());
         
         ~BranchNode();
-                   
 
         BranchNode* getParentBranch();
 
@@ -57,18 +46,14 @@ class BranchNode: public osg::Group
 
         /* Ast-Geometrie Berechnung */
         void buildBranch();
-        /* void buildBranches(); */
-        
         void calcBranch();
-        void buildLeaves();
-        bool hasLeaves();
-
-        int _index;
-        int getLevel();
+        
+        void buildLeaves(unsigned int leavesCount = 5,
+                         float distributionAngle = 144.0,
+                         NaturalCubicSpline* profileSpline = 0,
+                         NaturalCubicSpline* leavesSpline = 0);
 
  protected:
-        int _level;             /* Ebene des Astes im Baum */
-        
         BranchNode* _parentBranch;
 
         NaturalCubicSpline _spline;
@@ -78,7 +63,6 @@ class BranchNode: public osg::Group
 
         osg::ref_ptr<osg::Geometry> _geom;
 
-        bool _hasLeaves;
         vector<osg::ref_ptr<LeafGeode>> _leavesGeodes;
         int _leavesCount;
         int _leavesLevelCount;  /* welche Kind-Ast-Level haben

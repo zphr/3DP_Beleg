@@ -39,7 +39,7 @@ inline void LeafGeode::setTexture(string imagePath)
         osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
         osg::ref_ptr<osg::Image> image = osgDB::readImageFile(imagePath);
         texture->setImage(image.get());
-
+ 
         osg::StateSet* state = getOrCreateStateSet();
         state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
         
