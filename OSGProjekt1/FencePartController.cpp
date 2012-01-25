@@ -1,7 +1,8 @@
 #include "FencePartController.h"
 
-FencePartController::FencePartController(FlowerBucket* root)
+FencePartController::FencePartController(osg::Group* root, FlowerBucket* flowerBucket)
 {
+    _flowerBucket = flowerBucket;
     // _root = root
     osg::GraphicsContext::WindowingSystemInterface* wsi =
         osg::GraphicsContext::getWindowingSystemInterface();
@@ -19,7 +20,7 @@ FencePartController::FencePartController(FlowerBucket* root)
     HUDProjectionMatrix->setMatrix(osg::Matrix::ortho2D(0,_windowWidth,0,_windowHeight));
       
     // For the HUD model view matrix use an identity matrix:
-    osg::MatrixTransform* HUDModelViewMatrix = new osg::MatrixTransform;
+    HUDModelViewMatrix = new osg::MatrixTransform;
     HUDModelViewMatrix->setMatrix(osg::Matrix::identity());
 
     // Make sure the model view matrix is not affected by any transforms
@@ -41,10 +42,10 @@ FencePartController::FencePartController(FlowerBucket* root)
     osg::ref_ptr<osg::Geode> gd = new osg::Geode;
     gd->addDrawable( _geom.get() );
 
-    HUDModelViewMatrix->addChild( gd.get() );
-
     osg::StateSet* HUDStateSet = new osg::StateSet();
     gd->setStateSet(HUDStateSet);
+    
+    HUDModelViewMatrix->addChild( gd.release() );
 
     // Disable depth testing so geometry is draw regardless of depth values
     // of geometry already draw.
@@ -55,12 +56,23 @@ FencePartController::FencePartController(FlowerBucket* root)
     // in numerical order so set bin number to 11
     HUDStateSet->setRenderBinDetails( 11, "RenderBin");
 
-    _root = root;
 }
 
 FencePartController::~FencePartController()
 {
     _geom.release();
+}
+
+inline void FencePartController::resetGeometry()
+{
+    _vertices.release();
+    _vertices = new osg::Vec3Array;
+    _geom->setVertexArray( _vertices.get() );    
+    _geom->setPrimitiveSet(0, new osg::DrawArrays(GL_LINE_LOOP, 0, _vertices->getNumElements()) );
+                
+    _geom->dirtyDisplayList();
+    _geom->dirtyBound();
+
 }
 
 bool FencePartController::handle( const osgGA::GUIEventAdapter& ea,
@@ -87,21 +99,22 @@ bool FencePartController::handle( const osgGA::GUIEventAdapter& ea,
         {
         case 'a': case 'A':
             {
+                cout << "apply" << endl;
+                
+                if(_geom->getVertexArray()->getNumElements() <= 2 )
+                    break;
+                
                 osg::ref_ptr<FencePart> fence_part = new FencePart(_geom);
-                _root->setFencePart( fence_part.release() );
+                _flowerBucket->setFencePart( fence_part.release() );
+
+                resetGeometry();
                 break;
             }
         case 'd': case 'D':
-            {
-                _vertices.release();
-                _vertices = new osg::Vec3Array;
-                _geom->setVertexArray( _vertices.get() );    
-                _geom->setPrimitiveSet(0, new osg::DrawArrays(GL_LINE_LOOP, 0, _vertices->getNumElements()) );
-                
-                _geom->dirtyDisplayList();
-                _geom->dirtyBound();
-
-            }
+            resetGeometry();
+            break;
+        case 's': case 'S':
+            _flowerBucket->swapModels();
         }
     }
     return false;

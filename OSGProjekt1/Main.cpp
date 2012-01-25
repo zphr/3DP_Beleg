@@ -22,6 +22,7 @@
 #include "RoseFlower.h"
 #include "RoseLeaf.h"
 #include "FencePart.h"
+#include "FencePartController.h"
 #include <string>
 #include <map>
 #define _USE_MATH_DEFINES
@@ -389,9 +390,21 @@ void DynamicTest(osg::ref_ptr<osg::Group> &root)
     root->addChild( gd );
 }
 
-void KuebelTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer* viewer)
+void DynamicKuebelTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
 {
-    osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket(viewer);
+    osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
+
+    osg::ref_ptr<FencePartController> ctrler =
+        new FencePartController(root.get(), flower_bucket.get());
+    viewer.addEventHandler( ctrler.release() );
+
+    root->addChild( flower_bucket.release() );
+}
+
+
+void KuebelTest(osg::ref_ptr<osg::Group> &root)
+{
+    osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
 
     root->addChild( flower_bucket );
 }
@@ -596,7 +609,8 @@ int main( int argc, char** argv)
     // DynamicTest( root );
     // PlantStringTest( root );
     // KuebelTestOld( root );
-    KuebelTest( root, &viewer );
+    DynamicKuebelTest( root, viewer );
+    // KuebelTest( root );
     // DrawLineTest(root, viewer);
 
     viewer.setSceneData( root );

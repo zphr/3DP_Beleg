@@ -1,33 +1,73 @@
 #include "FlowerBucket.h"
 
-FlowerBucket::FlowerBucket(osgViewer::Viewer* viewer)
+FlowerBucket::FlowerBucket()
 {
+    _fpIndex = 0;
+    _useModel = true;
+
+    osg::ref_ptr<osg::Image> image =
+        osgDB::readImageFile( "wood1.jpg" );
+    osg::ref_ptr<osg::TextureCubeMap> texture = new osg::TextureCubeMap;
+
+    for(int i=0; i < 6; i++)
+    {
+        texture->setImage(i, image.get() );
+    }
+
     _fencePartModel = osgDB::readNodeFile("3d/latte.obj");
-    _fencePart = _fencePart.get();
+    osg::StateSet* state = getOrCreateStateSet();
 
-    _fenceOffset = 0.08;
-    _fenceArrayOffset = _fenceOffset;
-    _fenceWidth = 0.267 + _fenceArrayOffset;
-    _fenceHeight = 1.569;
-    _offset = 0.25;
+    state->setTextureMode(0, GL_TEXTURE_GEN_S, osg::StateAttribute::ON);
+    // state->setTextureMode(0, GL_TEXTURE_GEN_T, osg::StateAttribute::ON);
+    // state->setTextureMode(0, GL_TEXTURE_GEN_R, osg::StateAttribute::ON);
+    // state->setTextureMode(0, GL_TEXTURE_GEN_Q, osg::StateAttribute::ON);
 
-    _fenceCountX = 16;
-    _fenceCountY = 4;
+    osg::TexGen *tg = new osg::TexGen;
+    tg->setMode(osg::TexGen::OBJECT_LINEAR);
+    tg->setPlane(osg::TexGen::S, osg::Plane(
+                     osg::Vec3(0,-1,0),
+                     osg::Vec3(0,0,0)
+                 ));
+    state->setTextureAttributeAndModes(0, tg, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+    state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+
+    _fencePart = _fencePartModel.get();
+
+    _fenceModelOffset = 0.08;
+    _fenceModelWidth  = 0.267;
+    _fenceModelHeight = 1.569;
+    _fenceModelDepth  = 0.047124;
+    
+    _fenceOffset = _fenceModelOffset;
+    _fenceWidth  = _fenceModelWidth;
+    _fenceHeight = _fenceModelHeight; 
+    _fenceDepth  = _fenceModelDepth;
+
+    _width = 5.0;
+    _depth = 1.5 ;
 
     _verts = new osg::Vec3Array();
     _verts->push_back(osg::Vec3(0,0,0));
-    _verts->push_back(osg::Vec3(_fenceCountX * _fenceWidth, 0, 0));
-    _verts->push_back(osg::Vec3(_fenceCountX * _fenceWidth, _fenceCountY * _fenceWidth, 0));
-    _verts->push_back(osg::Vec3(0, _fenceCountY * _fenceWidth, 0));
+    _verts->push_back(osg::Vec3(_width, 0, 0));
+    _verts->push_back(osg::Vec3(_width, _depth, 0));
+    _verts->push_back(osg::Vec3(0, _depth, 0));
 
-    // osg::ref_ptr<FencePartController> ctrler = new FencePartController(this);
-    // viewer->addEventHandler( ctrler.get() );
+    calcParameters(_fenceWidth);
 
+    buildEarth();
     buildBucket();
     buildFence();
-    buildEarth();
 }
 
+inline void FlowerBucket::calcParameters(float fp_width, float scale_ratio)
+{
+    _fenceWidth  = scale_ratio*fp_width + _fenceOffset;
+    _fenceCountX = (int)(_width / _fenceWidth);
+    _fenceCountY = (int)(_depth / _fenceWidth);
+
+    _fenceArrayOffsetX = _fenceWidth * ((_width / _fenceWidth) - _fenceCountX)+_fenceOffset; 
+    _fenceArrayOffsetY = _fenceWidth * ((_depth / _fenceWidth) - _fenceCountY)+_fenceOffset; 
+}
 
 FlowerBucket::~FlowerBucket()
 {
@@ -40,24 +80,24 @@ inline void FlowerBucket::placeFence(bool alongY)
     float angle = 0.0;
     osg::Vec3 trans_init_v;
     osg::Vec3 trans_v;
-    osg::Vec3 trans_rot_v;
-
+    osg::Vec3 trans2_v;
+    
     if(alongY)
     {
         count = _fenceCountY;
         angle = osg::DegreesToRadians(90.0);
-        trans_init_v = osg::Vec3(_fenceArrayOffset/2.0,+_fenceOffset,0);
+        trans_init_v = osg::Vec3(_fenceArrayOffsetY/2.0,_fenceDepth,0);
         trans_v = osg::Vec3(0,_fenceWidth,0);
-        trans_rot_v = osg::Vec3(_fenceWidth*_fenceCountX+_fenceOffset*2,0,0);
+        trans2_v = osg::Vec3(_width+_fenceDepth*2,0,0);
     }
     else
     {
         count = _fenceCountX;
-        trans_init_v = osg::Vec3(_fenceArrayOffset/2.0,-_fenceOffset,0);
+        trans_init_v = osg::Vec3(_fenceArrayOffsetX/2.0,-_fenceDepth,0);
         trans_v = osg::Vec3(_fenceWidth,0,0);
-        trans_rot_v = osg::Vec3(0,_fenceWidth*_fenceCountY+_fenceOffset*2,0);
+        trans2_v = osg::Vec3(0,_depth+_fenceDepth*2,0);
     }
-
+    
     for(int i=0; i < count; i++)
     {
         osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform();
@@ -66,19 +106,20 @@ inline void FlowerBucket::placeFence(bool alongY)
         mat.postMult(osg::Matrix().rotate(angle, osg::Z_AXIS));
         mat.postMult(osg::Matrix().translate(trans_v * i));
         trans->setMatrix( mat );
-        trans->addChild( _fencePartModel.get() );
+        trans->addChild( _fencePart.get() );
         addChild( trans.release() );
 
         trans = new osg::MatrixTransform();
-        mat.postMult(osg::Matrix().translate(trans_rot_v));
+        mat.postMult(osg::Matrix().translate(trans2_v));
         trans->setMatrix( mat );
-        trans->addChild( _fencePartModel.get() );
+        trans->addChild( _fencePart.get() );
         addChild( trans.release() );
     }
 }
 
 void FlowerBucket::buildFence()
 {
+    _fpIndex = getNumChildren()-1;
     placeFence();
     placeFence(true);
 }
@@ -98,7 +139,6 @@ osg::Geometry* FlowerBucket::buildBoxWalls(osg::ref_ptr<osg::Vec3Array> verts,
                                            float height,
                                            float inset,
                                            float h_offset)
-
 {
     osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array();
     osg::Vec3 normal(0,-1,0);
@@ -158,6 +198,9 @@ void FlowerBucket::buildEarth()
     float r_z = 0.0;
     unsigned int res_x = _fenceCountX+1;
     unsigned int res_y = _fenceCountY+1;
+
+    float length_x = _width / _fenceCountX;
+    float length_y = _depth / _fenceCountY;
     
     srand ( time(NULL) );
 
@@ -173,8 +216,8 @@ void FlowerBucket::buildEarth()
         for(int j=0; j < res_y; j++)
         {
             earth_verts->push_back(
-                    osg::Vec3(_fenceWidth * i,
-                              _fenceWidth * j,
+                    osg::Vec3(length_x * i,
+                              length_y * j,
                               // _fenceHeight/1.25
                               ((float)(rand() % 100))/(1000.0*(1.0-((rand()%2)*2))) + _fenceHeight/1.25
                              ));
@@ -314,8 +357,55 @@ void FlowerBucket::buildEarth()
     addChild( gd.release() );
 }
 
-
 void FlowerBucket::setFencePart(osg::Geode* gd)
 {
-    _fencePart = gd;
+
+    // die alten Latten löschen
+    removeChildren(2, getNumChildren()-1);
+
+    _fpGeode = gd;
+
+    osg::BoundingBox bbox = _fpGeode->getBoundingBox();
+    float fp_width = bbox.xMax() - bbox.xMin();
+    float fp_height = bbox.yMax() - bbox.yMin();
+    float scale_ratio = _fenceHeight/fp_height;
+
+    calcParameters(fp_width, scale_ratio);
+
+    osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform();
+    osg::Matrix mat;
+    mat.postMult(osg::Matrix().scale(scale_ratio,
+                                     scale_ratio,
+                                     scale_ratio));
+    mat.postMult(osg::Matrix().rotate(osg::DegreesToRadians(90.0), osg::X_AXIS));
+    trans->setMatrix( mat );
+    trans->addChild( _fpGeode );
+
+    _fencePart = trans;
+
+    buildFence();
+}
+
+void FlowerBucket::swapModels()
+{
+    if(_useModel)
+    {
+        removeChildren(2, getNumChildren()-1);
+
+        _fencePart = _fencePartModel.get();
+
+        _fenceOffset = _fenceModelOffset;
+        _fenceWidth  = _fenceModelWidth;
+        _fenceHeight = _fenceModelHeight; 
+        _fenceDepth  = _fenceModelDepth;
+        calcParameters(_fenceWidth);
+        
+        buildFence();
+    }
+    else
+    {
+        setFencePart( _fpGeode.release() );
+    }
+    
+    _useModel = !_useModel;
 }

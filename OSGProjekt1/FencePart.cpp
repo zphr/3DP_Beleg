@@ -37,7 +37,7 @@ void FencePart::buildFencePart(osg::ref_ptr<osg::Geometry> &geom)
          
         v = osg::Vec3(v.x() / (float)_windowWidth,
                       v.y() / (float)_windowHeight,
-                      v.z());
+                      v.z() - _extrudeWidth/2.0);
         
         if(i == 0)
         {
