@@ -7,7 +7,9 @@
 #include <osg/Geode>
 #include <osgDB/ReadFile>
 #include <osg/TextureCubeMap>
+#include <osg/Texture2D>
 #include <osg/TexGen>
+#include <osg/PolygonMode>
 #include "FencePart.h"
 using namespace std;
 
@@ -22,12 +24,16 @@ class FlowerBucket: public osg::Group
 
   protected:
     void buildFence();
-    inline void calcParameters(float fp_width, float scale_ratio = 1.0);
+    inline void calcParameters(osg::Node *fencePart,
+                               float fp_width, float scale_ratio,
+                               float r[4], float s[4], float t[4]);
     inline void placeFence(bool alongY=false);
     osg::Geometry* buildBoxWalls(osg::ref_ptr<osg::Vec3Array> verts,
                                  float height,
                                  float inset=0.0,
-                                 float h_offset=0.0);
+                                 float h_offset=0.0,
+                                 float tile_u = 1.0,
+                                 float tile_v = 1.0);
 
     void buildEarth();
 
@@ -41,6 +47,7 @@ class FlowerBucket: public osg::Group
     float _fenceHeight;
     float _fenceDepth;
     float _fenceOffset;
+    float _fenceHOffset;
     float _fenceArrayOffsetX;
     float _fenceArrayOffsetY;
     
@@ -57,6 +64,7 @@ class FlowerBucket: public osg::Group
     
     osg::ref_ptr<osg::Vec3Array> _verts;
     osg::ref_ptr<osg::Geode> _fpGeode;
+    osg::ref_ptr<osg::Texture2D> _texture;
 
     int _fpIndex;
 };

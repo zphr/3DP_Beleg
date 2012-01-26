@@ -14,7 +14,7 @@ class FencePart: public osg::Geode
 {
   public:
     FencePart(osg::ref_ptr<osg::Geometry> &geom,
-              float extrudeWidth = 0.05);
+              float extrudeWidth = 0.035);
     ~FencePart();
     void buildFencePart(osg::ref_ptr<osg::Geometry> &geom);
 

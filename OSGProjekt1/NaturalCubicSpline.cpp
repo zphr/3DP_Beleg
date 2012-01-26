@@ -587,16 +587,16 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
     float tex_width  = 1.0 / (resolution-1);
     float tex_height = 1.0 / (elements-1);
     
-    vector<float> v_coords = mapLengthForUV(vertices);
-    vector<float> u_coords = mapLengthForUV(shape_verts);
+    vector<float> v_lengths = mapLengthForUV(vertices);
+    vector<float> u_lengths = mapLengthForUV(shape_verts);
 
     for(int i=0; i < elements; i++)
     {
-        tex_height = v_coords[i];
+        tex_height = v_lengths[i];
         
         for(int j=0; j < shape_verts->getNumElements(); j++)
         {
-            tex_width = u_coords[j];
+            tex_width = u_lengths[j];
             
             vert = osg::Vec4((*shape_verts)[j]);
             vert *= scale;
