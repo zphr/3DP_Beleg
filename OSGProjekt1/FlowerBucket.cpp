@@ -1,12 +1,9 @@
 #include "FlowerBucket.h"
 
-FlowerBucket::FlowerBucket()
+FlowerBucket::FlowerBucket(float width, float depth)
 {
     _fpIndex = 0;
     _useModel = true;
-
-    _width = 5.0;
-    _depth = 1.5 ;
 
     _fencePartModel = osgDB::readNodeFile("3d/latte.obj");
 
@@ -22,7 +19,17 @@ FlowerBucket::FlowerBucket()
     _fenceModelWidth  = 0.267;
     _fenceModelHeight = 1.4176;
     _fenceModelDepth  = 0.047124;
-    
+
+    if(width < (_fenceModelWidth + _fenceModelOffset))
+        _width = (_fenceModelWidth + _fenceModelOffset);
+    else
+        _width  = width;
+
+    if(depth < (_fenceModelWidth + _fenceModelOffset))
+        _depth = (_fenceModelWidth + _fenceModelOffset);
+    else
+        _depth  = depth;
+
     _fenceHOffset = 0.1;
     _fenceOffset = _fenceModelOffset;
     _fenceWidth  = _fenceModelWidth;
@@ -169,24 +176,30 @@ osg::Geometry* FlowerBucket::buildBoxWalls(osg::ref_ptr<osg::Vec3Array> verts,
 
     osg::ref_ptr<osg::Vec3Array> box_verts = new osg::Vec3Array();
 
-    osg::Matrix inset_mat;
-    inset_mat.postMult(osg::Matrix().rotate(osg::DegreesToRadians(90.0), osg::Z_AXIS));
     osg::Vec3 inset_vec(inset, inset, 0);
+    // Matrix um inset_vec in 4er Schritten um 90° zu drehen
+    osg::Matrix inset_mat;      
+    inset_mat.postMult(osg::Matrix().rotate(osg::DegreesToRadians(90.0), osg::Z_AXIS));
 
     osg::Vec3 height_vec(0,0,height);
     osg::Vec3 h_offset_vec(0,0,h_offset);
 
-    // Texturkoordinatengenerierung
+    // ---------------------------------------- Texturkoordinatengenerierung
     osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
     
     // Länge der Gegenkathete
     float opposite = cos(osg::DegreesToRadians(45.0)) * inset;
 
+    // Gesamtlänge U
     float length_u = height + 2*opposite;
+    // normalisierte Länge der Verschiebung in U
     float inset_u  = opposite / length_u;
+    // normalisierte Länge der Höhe 
     float height_u = height / length_u;
-    
+
+    // Gesamtlänge V
     float length_v = 2*(_width + _depth);
+    // normalisierte Länge der Verschiebung in V
     float inset_v  = opposite / length_v;
     float v        = 0;
 

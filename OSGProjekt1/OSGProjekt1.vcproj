@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="osgd.lib osgGAd.lib osgDBd.lib osgViewerd.lib osgTextd.lib osgUtild.lib OpenThreadsd.lib osgAnimationd.lib"
+				AdditionalDependencies="osgd.lib osgGAd.lib osgDBd.lib osgViewerd.lib osgTextd.lib osgUtild.lib OpenThreadsd.lib osgAnimationd.lib osgManipulatord.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="C:\OpenSceneGraph_301D\lib"
 				GenerateDebugInformation="true"
@@ -361,6 +361,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FlowerBucketController.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FlowerGroup.cpp"
 				>
 			</File>
@@ -432,6 +436,10 @@
 			</File>
 			<File
 				RelativePath=".\FlowerBucket.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FlowerBucketController.h"
 				>
 			</File>
 			<File

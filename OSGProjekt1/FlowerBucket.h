@@ -16,11 +16,15 @@ using namespace std;
 class FlowerBucket: public osg::Group
 {
   public:
-    FlowerBucket();
+    FlowerBucket(float width = 5.0, float depth = 1.5);
     ~FlowerBucket();
     void buildBucket();
     void swapModels();
     void setFencePart(osg::Geode* gd);
+    
+    float getWidth() { return _width; }
+    float getDepth() { return _depth; }
+    float getHeight() { return _fenceHeight + _fenceHOffset; }
 
   protected:
     void buildFence();

@@ -1,7 +1,10 @@
 #pragma once
 #include <iostream>
+#include <fstream>
+
 #include <osg/MatrixTransform>
 #include <osg/Point>
+#include <osg/Plane>
 #include <osg/PointSprite>
 #include <osg/Texture2D>
 #include <osg/BlendFunc>
@@ -9,11 +12,21 @@
 #include <osg/ShapeDrawable>
 #include <osg/Geometry>
 #include <osg/Geode>
+#include <osg/AutoTransform>
 #include <osgDB/ReadFile>
 #include <osgViewer/Viewer>
 #include <osgUtil/Tessellator>
 #include <osgUtil/SmoothingVisitor>
-#include <fstream>
+// #include <osgManipulator/CompositeDragger>
+#include <osgManipulator/TranslateAxisDragger>
+#include <osgManipulator/TrackballDragger>
+#include <osgManipulator/ScaleAxisDragger>
+#include <osgManipulator/TabBoxDragger>
+#include <osgManipulator/TabBoxTrackballDragger>
+#include <osgManipulator/TabPlaneTrackballDragger>
+#include <osgManipulator/RotateSphereDragger>
+#include <osgUtil/LineSegmentIntersector>
+
 #include "LSysPlant.h"
 #include "NaturalCubicSpline.h"
 #include "LeafGeode.h"
@@ -23,6 +36,8 @@
 #include "RoseLeaf.h"
 #include "FencePart.h"
 #include "FencePartController.h"
+#include "FlowerBucketController.h"
+
 #include <string>
 #include <map>
 #define _USE_MATH_DEFINES
@@ -582,6 +597,368 @@ void RundkuebelTest(osg::ref_ptr<osg::Group> &root)
 
 }
 
+class TrackballAxisDragger : public osgManipulator::CompositeDragger
+{
+    protected:
+    osg::ref_ptr<osgManipulator::TrackballDragger> _rotDragger;
+    osg::ref_ptr<osgManipulator::TranslateAxisDragger> _transDragger;
+    osg::ref_ptr<osgManipulator::ScaleAxisDragger> _scaleDragger;
+    osg::ref_ptr<osg::AutoTransform> _autoTransform;
+    osg::ref_ptr<osg::MatrixTransform> _sizeTransform;
+
+  public:
+    TrackballAxisDragger()
+    {
+        _autoTransform = new osg::AutoTransform;
+        _autoTransform->setAutoScaleToScreen(true);
+        addChild(_autoTransform.get());
+
+        _sizeTransform = new osg::MatrixTransform;
+        _sizeTransform->setMatrix(
+            osg::Matrix::scale(200, 200, 200));
+        _autoTransform->addChild(_sizeTransform.get());
+
+        _rotDragger = new osgManipulator::TrackballDragger;
+        _rotDragger->setName("TrackballDragger");
+        _sizeTransform->addChild(_rotDragger.get());
+
+        _scaleDragger = new osgManipulator::ScaleAxisDragger;
+        _scaleDragger->setName("ScaleAxisDragger");
+        _sizeTransform->addChild(_scaleDragger.get());
+
+        _transDragger = new osgManipulator::TranslateAxisDragger;
+        _transDragger->setName("TranslateAxisDragger");
+        _sizeTransform->addChild(_transDragger.get());
+
+
+        this->addDragger(_rotDragger.get());
+        this->addDragger(_scaleDragger.get());
+        this->addDragger(_transDragger.get());
+        this->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+        this->setParentDragger(getParentDragger());
+    
+    }
+
+    void setupDefaultGeometry()
+    {
+        _rotDragger->setupDefaultGeometry();
+
+        float axesScale = 1.5;
+        // _scaleDragger->setMatrix(
+        //     osg::Matrix::scale(axesScale,axesScale,axesScale));
+        _scaleDragger->setupDefaultGeometry();
+
+        axesScale = 1.5;
+        _transDragger->setMatrix(
+            osg::Matrix::scale(axesScale,axesScale,axesScale));
+        _transDragger->setupDefaultGeometry();
+    }
+
+};
+
+void DraggerTest(osg::ref_ptr<osg::Group> &root, FlowerBucket* scene)
+{
+
+    scene->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
+
+    osg::ref_ptr<osg::MatrixTransform> selection = new osg::MatrixTransform;
+    selection->addChild(scene);
+    root->addChild( selection );
+
+    osg::ref_ptr<osgManipulator::TabBoxTrackballDragger> dragger =
+        new osgManipulator::TabBoxTrackballDragger();
+    dragger->setupDefaultGeometry();
+
+    root->addChild(dragger.get());
+
+    float scale = 1.25;
+    dragger->setMatrix(osg::Matrix::scale((scene->getWidth())*scale,
+                                          (scene->getDepth())*scale,
+                                          (scene->getHeight())*scale )
+                       * osg::Matrix::translate(scene->getBound().center())
+                      );
+    dragger->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+    dragger->addTransformUpdating(selection.release());
+    dragger->setHandleEvents(true);
+    dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_ALT);
+
+}
+
+class PickHandler : public osgGA::GUIEventHandler
+{
+    public:
+    PickHandler(osg::Group* root)
+        :_root(root), _hOffsetVec(osg::Vec3(0,0,0.01)) {}
+    virtual bool handle( const osgGA::GUIEventAdapter& ea,
+                         osgGA::GUIActionAdapter& aa );
+    
+    protected:
+    osg::ref_ptr<osg::MatrixTransform> _selectionBox;
+    osg::Plane _plane;
+    osg::ref_ptr<osg::Group> _pickScene;
+    osg::ref_ptr<osg::Camera> _cam;
+    osg::ref_ptr<osg::Geometry> _geom;
+    osg::ref_ptr<osg::Vec3Array> _verts;
+    osg::ref_ptr<osg::Group> _root;
+    osg::ref_ptr<osg::Geometry> _rectGeom;
+    osg::ref_ptr<osg::Vec3Array> _rectVerts;
+    osg::Vec3 _hOffsetVec;
+
+};
+
+bool PickHandler::handle( const osgGA::GUIEventAdapter& ea,
+                          osgGA::GUIActionAdapter& aa )
+{
+
+    osgViewer::Viewer* viewer =  
+        dynamic_cast<osgViewer::Viewer*>(&aa);
+    
+    if ( viewer )
+    {
+
+        if ( ea.getEventType() == osgGA::GUIEventAdapter::PUSH              &&
+             ea.getButton()    == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
+             (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL) )
+        {
+    
+            osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector =
+                new osgUtil::LineSegmentIntersector(
+                    osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
+
+            osgUtil::IntersectionVisitor iv( intersector.get() );
+            // iv.setTraversalMask( ~0x1 );
+            viewer->getCamera()->accept( iv );
+
+            if(_pickScene.get())
+                _pickScene.release();
+            _pickScene = new osg::Group();
+            
+            if ( intersector->containsIntersections() )
+            {
+                osgUtil::LineSegmentIntersector::Intersection& result =
+                    *(intersector->getIntersections().begin());
+
+                osg::Vec3 hit_vec = result.getWorldIntersectPoint();
+
+                if(_rectGeom.get())
+                    _rectGeom.release();
+                _rectGeom = new osg::Geometry();
+
+                if(_rectVerts.get())
+                    _rectVerts.release();
+                _rectVerts = new osg::Vec3Array();
+
+                _rectVerts->push_back( hit_vec + _hOffsetVec );
+                _rectVerts->push_back( hit_vec + _hOffsetVec );
+                _rectVerts->push_back( hit_vec + _hOffsetVec );
+                _rectVerts->push_back( hit_vec + _hOffsetVec );
+
+                _rectGeom->setVertexArray( _rectVerts.get() );
+                _rectGeom->addPrimitiveSet( new osg::DrawArrays(GL_QUADS, 0, _rectVerts->getNumElements()) );
+
+                osg::ref_ptr<osg::Geode> rect_gd = new osg::Geode();
+                rect_gd->addDrawable( _rectGeom.get() );
+                _root->addChild( rect_gd.get() );
+                
+                if(_geom.get())
+                    _geom.release();
+                _geom = new osg::Geometry();
+
+                if(_verts.get())
+                    _verts.release();
+                _verts = new osg::Vec3Array();
+
+                float expansion = 10.0;
+                osg::Vec3 expansion_vec( expansion, expansion, 0 );
+                osg::Matrix mat90;      
+                mat90.postMult(osg::Matrix().rotate(osg::DegreesToRadians(90.0), osg::Z_AXIS));
+
+                for(int i=0; i<4; i++)
+                {
+                    _verts->push_back( hit_vec + expansion_vec );
+                    expansion_vec = expansion_vec * mat90;
+                }
+
+                
+                osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+                colors->push_back( osg::Vec4(1.0f, 0.0f, 1.0f, 0.5f) );
+                colors->push_back( osg::Vec4(1.0f, 0.0f, 1.0f, 0.5f) );
+                colors->push_back( osg::Vec4(1.0f, 0.0f, 1.0f, 0.5f) );
+                colors->push_back( osg::Vec4(1.0f, 0.0f, 1.0f, 0.5f) );
+
+                _geom->setVertexArray( _verts.get() );
+                _geom->setColorArray( colors.get() );
+                _geom->setColorBinding( osg::Geometry::BIND_PER_VERTEX );
+                _geom->addPrimitiveSet( new osg::DrawArrays(GL_QUADS, 0, _verts->getNumElements()) );
+
+                _geom->setName("PlaneGeom");
+
+                osg::ref_ptr<osg::Geode> gd = new osg::Geode();
+                gd->addDrawable( _geom.get() );
+
+                osg::StateSet* state = gd->getOrCreateStateSet();
+                state->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
+                state->setMode(GL_BLEND, osg::StateAttribute::ON);
+
+                osg::BlendFunc* blend = new osg::BlendFunc;
+                blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+
+                _root->addChild( gd.get() );
+            }
+        }
+        
+        if ( ea.getEventType() == osgGA::GUIEventAdapter::DRAG  &&
+             // ea.getButton()    == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
+             (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL) )
+        {
+
+            osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector =
+                new osgUtil::LineSegmentIntersector(
+                    osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
+
+            osgUtil::IntersectionVisitor iv( intersector.get() );
+            viewer->getCamera()->accept( iv );
+
+            if ( intersector->containsIntersections() )
+            {
+                osgUtil::LineSegmentIntersector::Intersections intersections =
+                    intersector->getIntersections();
+
+                osgUtil::LineSegmentIntersector::Intersections::iterator itr =
+                    intersections.begin();
+
+                for(; itr != intersections.end(); itr++)
+                {
+                    if(itr->drawable == _geom)
+                    {
+                        osgUtil::LineSegmentIntersector::Intersection& result = *(itr);
+                
+                        osg::Vec3 hit_vec = result.getWorldIntersectPoint();
+
+                        osg::Vec3 origin_vec = (*_rectVerts)[0];
+                        (*_rectVerts)[2] = hit_vec; // andere Ecke
+                        (*_rectVerts)[1] = osg::Vec3(origin_vec.x(), hit_vec.y(), origin_vec.z());
+                        (*_rectVerts)[3] = osg::Vec3(hit_vec.x(), origin_vec.y(), origin_vec.z());
+
+                        _rectGeom->dirtyDisplayList();
+                        _rectGeom->dirtyBound();
+
+                        break;
+                    }
+                }
+            }
+                    
+            return true;
+        }
+
+        // if ( ea.getEventType() == osgGA::GUIEventAdapter::RELEASE           &&
+        //      ea.getButton()    == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
+        //      (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL) )
+        // {
+        //     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector =
+        //         new osgUtil::LineSegmentIntersector(
+        //             osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
+
+        //     osgUtil::IntersectionVisitor iv( intersector.get() );
+        //     viewer->getCamera()->accept( iv );
+
+        //     // // iv.setTraversalMask( ~0x1 );
+        //     // // _cam->accept( iv );
+        //     // _pickScene->accept( iv );
+
+        //     if ( intersector->containsIntersections() )
+        //     {
+        //         osgUtil::LineSegmentIntersector::Intersection& result =
+        //             *(intersector->getIntersections().begin());
+
+        //         cout << result.drawable->getName() << endl;
+
+        //         osg::Vec3 hit_vec = result.getWorldIntersectPoint();
+        //         cout << hit_vec.x() << " " << hit_vec.y() << " " << hit_vec.z() << endl;
+        //     }
+
+        // }
+    }
+    return false;
+}
+
+void PickTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
+{
+    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+    vertices->push_back( osg::Vec3(1.0f, 1.0f, 0.0f) );
+    vertices->push_back( osg::Vec3(-1.0f, 1.0f, 0.0f) );
+    vertices->push_back( osg::Vec3(-1.0f, -1.0f, 0.0f) );
+    vertices->push_back( osg::Vec3(1.0f, -1.0f, 1.0f) );
+
+    osg::ref_ptr<osg::Geometry> quad = new osg::Geometry;
+    quad->setVertexArray( vertices.get() );
+    quad->addPrimitiveSet( new osg::DrawArrays(GL_QUADS, 0, vertices->getNumElements()) );
+    
+    osg::ref_ptr<osg::Geode> gd = new osg::Geode;
+    gd->addDrawable( quad.get() );
+
+    root->addChild( gd.release() );
+
+    vector< osg::ref_ptr<osg::Geometry> > groundGeoms;
+    groundGeoms.push_back( quad );
+
+    osg::ref_ptr<FlowerBucketController> picker =
+        new FlowerBucketController(root.get(), groundGeoms);
+
+    
+
+    viewer.addEventHandler( picker.get() );
+}
+
+void PointTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
+{
+    osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array;
+
+    osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
+    normals->push_back( osg::Vec3(0.0f,-1.0f,0.0f) );
+
+    osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+    colors->push_back( osg::Vec4(1.0f, 0.0f, 1.0f, 1.0f) );
+    colors->push_back( osg::Vec4(0.0f, 1.0f, 0.0f, 1.0f) );
+    colors->push_back( osg::Vec4(0.0f, 0.0f, 1.0f, 1.0f) );
+    colors->push_back( osg::Vec4(1.0f, 1.0f, 1.0f, 1.0f) );
+
+    osg::ref_ptr<osg::Geometry> quad = new osg::Geometry;
+    quad->setVertexArray( vertices.get() );
+    quad->setNormalArray( normals.get() );
+    // siehe BIND_OVERALL weiter oben
+    quad->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
+    quad->setColorArray( colors.get() );
+    quad->setColorBinding( osg::Geometry::BIND_PER_VERTEX );
+
+    quad->addPrimitiveSet( new osg::DrawArrays(GL_POINTS, 0, vertices->getNumElements()) );
+    
+    osg::ref_ptr<osg::Geode> gd = new osg::Geode;
+    gd->addDrawable( quad.get() );
+       
+    osg::StateSet* set = gd->getOrCreateStateSet();
+    set->setMode(GL_BLEND, osg::StateAttribute::ON);
+    osg::BlendFunc *fn = new osg::BlendFunc();
+    fn->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::DST_ALPHA);
+    set->setAttributeAndModes(fn, osg::StateAttribute::ON);
+
+    /// Setup the point sprites
+    osg::PointSprite *sprite = new osg::PointSprite();
+    set->setTextureAttributeAndModes(0, sprite, osg::StateAttribute::ON);
+
+    /// Give some size to the points to be able to see the sprite
+    osg::Point *point = new osg::Point();
+    point->setSize(5);
+    set->setAttribute(point);
+
+    /// Disable depth test to avoid sort problems and Lighting
+    set->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+    set->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+
+    root->addChild( gd.release() );
+
+}
+
 int main( int argc, char** argv)
 {
 
@@ -609,9 +986,13 @@ int main( int argc, char** argv)
     // DynamicTest( root );
     // PlantStringTest( root );
     // KuebelTestOld( root );
-    DynamicKuebelTest( root, viewer );
-    // KuebelTest( root );
+    // DynamicKuebelTest( root, viewer );
+    KuebelTest( root );
     // DrawLineTest(root, viewer);
+    PickTest( root, viewer );
+
+    // osg::ref_ptr<FlowerBucket> fb = new FlowerBucket();
+    // DraggerTest( root, fb.get() );
 
     viewer.setSceneData( root );
 
