@@ -1,4 +1,5 @@
 #pragma once
+#include "FlowerBucketCtrlBase.h"
 #include "FlowerBucket.h"
 #include <iostream>
 #include <osg/ShapeDrawable>
@@ -12,7 +13,7 @@
 /* #include <math.h> */
 using namespace std;
 
-class FencePartController : public osgGA::GUIEventHandler
+class FencePartController : public osgGA::GUIEventHandler, public FlowerBucketCtrlBase
 { 
   
   public:

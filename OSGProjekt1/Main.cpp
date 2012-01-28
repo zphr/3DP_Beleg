@@ -888,7 +888,7 @@ void PickTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
     vertices->push_back( osg::Vec3(1.0f, 1.0f, 0.0f) );
     vertices->push_back( osg::Vec3(-1.0f, 1.0f, 0.0f) );
     vertices->push_back( osg::Vec3(-1.0f, -1.0f, 0.0f) );
-    vertices->push_back( osg::Vec3(1.0f, -1.0f, 1.0f) );
+    vertices->push_back( osg::Vec3(1.0f, -1.0f, 0.0f) );
 
     osg::ref_ptr<osg::Geometry> quad = new osg::Geometry;
     quad->setVertexArray( vertices.get() );
@@ -899,15 +899,37 @@ void PickTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
 
     root->addChild( gd.release() );
 
+    osg::ref_ptr<osg::Vec3Array> vertices2 = new osg::Vec3Array;
+    vertices2->push_back( osg::Vec3(1.0f, 1.0f, 2.0f) );
+    vertices2->push_back( osg::Vec3(-1.0f, 1.0f, 2.0f) );
+    vertices2->push_back( osg::Vec3(-1.0f, -1.0f, 2.0f) );
+    vertices2->push_back( osg::Vec3(1.0f, -1.0f, 2.0f) );
+
+    osg::ref_ptr<osg::Geometry> quad2 = new osg::Geometry;
+    quad2->setVertexArray( vertices2.get() );
+    quad2->addPrimitiveSet( new osg::DrawArrays(GL_QUADS, 0, vertices2->getNumElements()) );
+    
+    osg::ref_ptr<osg::Geode> gd2 = new osg::Geode;
+    gd2->addDrawable( quad2.get() );
+
+    root->addChild( gd2.release() );
+
     vector< osg::ref_ptr<osg::Geometry> > groundGeoms;
     groundGeoms.push_back( quad );
+    groundGeoms.push_back( quad2 );
 
     osg::ref_ptr<FlowerBucketController> picker =
         new FlowerBucketController(root.get(), groundGeoms);
-
     
+    viewer.addEventHandler( picker.release() );
 
-    viewer.addEventHandler( picker.get() );
+    osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
+
+    osg::ref_ptr<FencePartController> ctrler =
+        new FencePartController(root.get(), flower_bucket.get());
+    viewer.addEventHandler( ctrler.release() );
+
+    root->addChild( flower_bucket.release() );
 }
 
 void PointTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
@@ -987,7 +1009,7 @@ int main( int argc, char** argv)
     // PlantStringTest( root );
     // KuebelTestOld( root );
     // DynamicKuebelTest( root, viewer );
-    KuebelTest( root );
+    // KuebelTest( root );
     // DrawLineTest(root, viewer);
     PickTest( root, viewer );
 

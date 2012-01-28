@@ -365,6 +365,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FlowerBucketCtrlBase.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FlowerGroup.cpp"
 				>
 			</File>
@@ -440,6 +444,10 @@
 			</File>
 			<File
 				RelativePath=".\FlowerBucketController.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FlowerBucketCtrlBase.h"
 				>
 			</File>
 			<File

@@ -1,4 +1,5 @@
 #pragma once
+#include "FlowerBucketCtrlBase.h"
 #include "FlowerBucket.h"
 #include <iostream>
 #include <osg/ShapeDrawable>
@@ -13,7 +14,7 @@
 #include <math.h>
 using namespace std;
 
-class FlowerBucketController : public osgGA::GUIEventHandler
+class FlowerBucketController : public osgGA::GUIEventHandler, public FlowerBucketCtrlBase
 {
     public:
     FlowerBucketController(osg::Group* root, float pickExpansion = 10.0);
@@ -32,6 +33,7 @@ class FlowerBucketController : public osgGA::GUIEventHandler
     osg::ref_ptr<osg::Vec3Array> _pickVerts;
     float _pickExpansion;
     vector< osg::ref_ptr<osg::Geometry> > _groundGeoms;
+    osg::Geometry* _currentGround;
     
     osg::ref_ptr<osg::Group> _root;
     osg::ref_ptr<osg::Geometry> _rectGeom;

@@ -6,7 +6,8 @@ FlowerBucketController::FlowerBucketController(osg::Group* root,
     :_root(root),
      _hOffsetVec(osg::Vec3(0,0,0.01)),
      _pickExpansion(pickExpansion),
-     _drawRect(false)
+     _drawRect(false),
+     _currentGround(0)
 {
 
 }
@@ -18,7 +19,8 @@ FlowerBucketController::FlowerBucketController(osg::Group* root,
      _hOffsetVec(osg::Vec3(0,0,0.01)),
      _pickExpansion(pickExpansion),
      _drawRect(false),
-     _groundGeoms( groundGeoms )
+     _groundGeoms( groundGeoms ),
+     _currentGround(0)
 {
 
 }
@@ -130,79 +132,71 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
             return false;
         }
 
-        // osgUtil::LineSegmentIntersector::Intersection& result_ground =
-        //     *(intersector->getIntersections().begin());
-
-        // bool hit_ground = false;
-
-        // for(int i=0; i < _groundGeoms.size(); i++)
-        //     if(result_ground.drawable == _groundGeoms[i])
-        //         hit_ground = true;
-
-        // if(hit_ground == false)
-        //     return false;
-
         if( ea.getEventType() == osgGA::GUIEventAdapter::PUSH              &&
             ea.getButton()    == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
-            (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL))
+            (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_ALT))
         {
+
             // Start-Schnittpunkt suchen
             osgUtil::LineSegmentIntersector::Intersection& result =
                 *(intersector->getIntersections().begin());
 
+            for(int i=0; i < _groundGeoms.size(); i++)
+                if(result.drawable == _groundGeoms[i])
+                    _currentGround = _groundGeoms[i];
+
+            if(_currentGround == 0)
+                return false;
+
             osg::Vec3 hit_vec = result.getWorldIntersectPoint();
             setupRectangle( hit_vec );
-            setupPickPlane( hit_vec );
+            // setupPickPlane( hit_vec );
 
             _drawRect = true;
 
             return false;
         }
 
+        
+        if(_currentGround == 0)
+            return false;
+
         if( ea.getEventType() == osgGA::GUIEventAdapter::DRAG && _drawRect )
         {
 
-            osgUtil::LineSegmentIntersector::Intersections intersections =
-                intersector->getIntersections();
+            osgUtil::LineSegmentIntersector::Intersection& result =
+                *(intersector->getIntersections().begin());
 
-            osgUtil::LineSegmentIntersector::Intersections::iterator itr =
-                intersections.begin();
-
-            for(; itr != intersections.end(); itr++)
+            if(result.drawable == _currentGround)
             {
-                if(itr->drawable == _pickGeom)
-                {
-                    osgUtil::LineSegmentIntersector::Intersection& result = *(itr);
+                osg::Vec3 hit_vec = result.getWorldIntersectPoint();
 
-                    osg::Vec3 hit_vec = result.getWorldIntersectPoint();
+                //           ^y
+                //           |
+                // 2---------1---------2
+                // |         |         |
+                // |         |         |
+                // 3---------0---------3 -->x
+                // |         |         |
+                // |         |         |   0:push
+                // 2---------1---------2   2:release
+                osg::Vec3 origin_vec = (*_rectVerts)[0];
+                (*_rectVerts)[2] = osg::Vec3(hit_vec.x(), hit_vec.y(), origin_vec.z()); // andere Ecke
+                (*_rectVerts)[1] = osg::Vec3(origin_vec.x(), hit_vec.y(), origin_vec.z());
+                (*_rectVerts)[3] = osg::Vec3(hit_vec.x(), origin_vec.y(), origin_vec.z());
 
-                    //           ^y
-                    //           |
-                    // 2---------1---------2
-                    // |         |         |
-                    // |         |         |
-                    // 3---------0---------3 -->x
-                    // |         |         |
-                    // |         |         |   0:push
-                    // 2---------1---------2   2:release
-                    osg::Vec3 origin_vec = (*_rectVerts)[0];
-                    (*_rectVerts)[2] = hit_vec; // andere Ecke
-                    (*_rectVerts)[1] = osg::Vec3(origin_vec.x(), hit_vec.y(), origin_vec.z());
-                    (*_rectVerts)[3] = osg::Vec3(hit_vec.x(), origin_vec.y(), origin_vec.z());
+                _rectGeom->dirtyDisplayList();
+                _rectGeom->dirtyBound();
 
-                    _rectGeom->dirtyDisplayList();
-                    _rectGeom->dirtyBound();
-
-                    return true;
-                }
+                return true;
             }
         }
 
         if( ea.getEventType() == osgGA::GUIEventAdapter::RELEASE           &&
             ea.getButton()    == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
-            (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL) )
+            (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_ALT) )
         {
-            removeHelper( _pickGeom.release() );
+            // removeHelper( _pickGeom.release() );
 
             osg::Vec3 draw_direction_vec = (*_rectVerts)[2] - (*_rectVerts)[0];
             osg::Vec3 new_origin;
@@ -238,10 +232,14 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
             trans->setMatrix( osg::Matrix().translate( new_origin.x(),
                                                      new_origin.y(),
                                                      new_origin.z() ));
+            
+            FlowerBucketCtrlBase::_currentBucket = fb.get();
+
             trans->addChild( fb.release() );
             _root->addChild( trans.release() );
 
             _drawRect = false;
+            _currentGround = 0;
         }
 
     }

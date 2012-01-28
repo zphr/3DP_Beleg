@@ -2,7 +2,8 @@
 
 FencePartController::FencePartController(osg::Group* root, FlowerBucket* flowerBucket)
 {
-    _flowerBucket = flowerBucket;
+    FlowerBucketCtrlBase::_currentBucket = flowerBucket;
+
     // _root = root
     osg::GraphicsContext::WindowingSystemInterface* wsi =
         osg::GraphicsContext::getWindowingSystemInterface();
@@ -85,7 +86,6 @@ bool FencePartController::handle( const osgGA::GUIEventAdapter& ea,
         if(ea.getButton() == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
            ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL )
         {
-            cout << ea.getX() << " " << ea.getY() << endl;
             
             _vertices->push_back(osg::Vec3(ea.getX(), ea.getY(), 0));
             _geom->setPrimitiveSet(0, new osg::DrawArrays(GL_LINE_LOOP, 0, _vertices->getNumElements()) );
@@ -93,19 +93,64 @@ bool FencePartController::handle( const osgGA::GUIEventAdapter& ea,
             _geom->dirtyDisplayList();
             _geom->dirtyBound();
         }
+        
+        if(ea.getButton() == osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON &&
+           ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_CTRL )
+        {
+            osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>(&aa);
+
+            if ( viewer )
+            {
+                osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector =
+                    new osgUtil::LineSegmentIntersector(
+                        osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
+
+                osgUtil::IntersectionVisitor iv( intersector.get() );
+                viewer->getCamera()->accept( iv );
+
+                // wenn nichts geschnitten wurde abbrechen!
+                if ( !(intersector->containsIntersections()) )
+                {
+                    return false;
+                }
+
+                osgUtil::LineSegmentIntersector::Intersections intersections =
+                    intersector->getIntersections();
+
+                osgUtil::LineSegmentIntersector::Intersections::iterator itr =
+                    intersections.begin();
+
+                for(; itr != intersections.end(); itr++)
+                {
+                    osg::NodePath::iterator path_itr = itr->nodePath.begin();
+
+                    for(; path_itr != itr->nodePath.end(); path_itr++)
+                    {
+                        FlowerBucket* fb = dynamic_cast<FlowerBucket*>(*path_itr);
+                        if(fb)
+                        {
+                            FlowerBucketCtrlBase::_currentBucket = fb;
+                            return false;
+                        }
+                        
+                    }
+                }
+
+            }
+
+        }
         break;
+        
     case osgGA::GUIEventAdapter::KEYDOWN:
         switch ( ea.getKey() )
         {
         case 'a': case 'A':
             {
-                cout << "apply" << endl;
-                
                 if(_geom->getVertexArray()->getNumElements() <= 2 )
                     break;
                 
                 osg::ref_ptr<FencePart> fence_part = new FencePart(_geom);
-                _flowerBucket->setFencePart( fence_part.release() );
+                FlowerBucketCtrlBase::_currentBucket->setFencePart( fence_part.release() );
 
                 resetGeometry();
                 break;
@@ -114,8 +159,10 @@ bool FencePartController::handle( const osgGA::GUIEventAdapter& ea,
             resetGeometry();
             break;
         case 's': case 'S':
-            _flowerBucket->swapModels();
+            FlowerBucketCtrlBase::_currentBucket->swapModels();
+            break;
         }
     }
+    
     return false;
 }
