@@ -13,7 +13,7 @@ LeafGeode::LeafGeode(NaturalCubicSpline spline,
     _spline = spline;
 
     setTexture(imagePath);
-    addDrawable( _spline.drawExtrudedCylinder(resolution, scale) );
+    addDrawable( _spline.buildExtrudedShape(resolution, scale) );
 }
 
 LeafGeode::LeafGeode(NaturalCubicSpline spline, NaturalCubicSpline extrudeShape,
@@ -24,7 +24,7 @@ LeafGeode::LeafGeode(NaturalCubicSpline spline, NaturalCubicSpline extrudeShape,
     _spline.setExtrudeShape( &_extrudeShape );
 
     setTexture(imagePath);
-    addDrawable( _spline.drawExtrudedCylinder(resolution, scale) );
+    addDrawable( _spline.buildExtrudedShape(resolution, scale) );
 }
 
 LeafGeode::~LeafGeode()

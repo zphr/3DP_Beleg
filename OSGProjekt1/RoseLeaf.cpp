@@ -18,7 +18,7 @@ RoseLeaf::RoseLeaf()
                                       12,
                                       new NaturalCubicSpline(line_points, 1)
                                       );
-    addDrawable( profile_spline.drawExtrudedCylinder(3, 0.5) );
+    addDrawable( profile_spline.buildExtrudedShape(3, 0.5) );
 
     setTexture("blatt.png");
 }

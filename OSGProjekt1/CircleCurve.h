@@ -1,3 +1,4 @@
+#pragma once
 #include "BaseCurve.h"
 
 class CircleCurve: public BaseCurve
@@ -7,9 +8,10 @@ class CircleCurve: public BaseCurve
          ~CircleCurve();
 
          osg::Vec4Array* calcPoints(unsigned int resolution);
-         osg::Geometry* buildMeshAlongPath(unsigned int resolution,
+         osg::Geometry* buildMeshAlongPath(unsigned int extrudeShapeRes,
                                         float scale,
                                         const vector<osg::Matrix> &matrices,
                                         const osg::ref_ptr<osg::Vec3Array> &vertices,
-                                        const vector<float> &profile_scale = vector<float>());
+                                        BaseCurve* profileCurve);
+         float calcProfileAtPercent(float percent);
 };

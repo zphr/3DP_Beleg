@@ -8,12 +8,13 @@ BranchNode::BranchNode(BranchNode* parentBranch,
 {
     _parentBranch = parentBranch;
     _knots = new osg::Vec4Array( (*knots) );
-
-    _leavesGeodes = leavesGeodes;
-
-    _geom = new osg::Geometry;
     
     _flower = flower;
+    _leavesGeodes = leavesGeodes;
+
+    _directDescendant = false;
+
+    _geom = new osg::Geometry;
 }
 
 BranchNode::BranchNode(FlowerGroup* flower,
@@ -22,12 +23,14 @@ BranchNode::BranchNode(FlowerGroup* flower,
     _parentKnotIndex = 0;
     _parentBranch = 0;
     _knots = new osg::Vec4Array;
-
+    
+    _flower = flower;
     _leavesGeodes = leavesGeodes;
+
+    _directDescendant = false;
 
     _geom = new osg::Geometry;
     
-    _flower = flower;
 }
 
 BranchNode::BranchNode(BranchNode* parentBranch,
@@ -41,11 +44,13 @@ BranchNode::BranchNode(BranchNode* parentBranch,
     _knots = new osg::Vec4Array;
     _knots->push_back(startKnot);
 
+    _flower = flower;
     _leavesGeodes = leavesGeodes;
 
+    _directDescendant = false;
+
     _geom = new osg::Geometry;
-    
-    _flower = flower;
+
 }
 
 BranchNode::~BranchNode()
@@ -103,26 +108,47 @@ inline osg::Matrix BranchNode::getKnotFrame(int n)
     return _spline.getKnotFrame(n);
 }
 
-void BranchNode::buildBranch()
+void BranchNode::checkIfDirectDescendant(float &baseScale)
 {
-    calcBranch();
+    if(_parentBranch)
+        if((_parentBranch->getKnotCount() -1) == _parentKnotIndex)
+            baseScale = _parentBranch->getLastScale();
 }
 
-void BranchNode::calcBranch()
+// Skalierung des Astes am Ende, wichtig für direkte Nachfolgeräste,
+// um nahtlos anzuschließen
+float BranchNode::getLastScale()
+{
+    return _lastScale;
+}
+
+void BranchNode::buildBranch(float baseScale,
+                             unsigned int splineRes,
+                             unsigned int cylinderRes,
+                             osg::Texture2D* branchTex,
+                             NaturalCubicSpline* branchProfileSpline)
 {
     _spline.setKnots( _knots.get() );
 
-    // cout << _parentKnotIndex << endl;
     if(_parentBranch)
-        {
-            _spline.setFirstFrame(
-                _parentBranch->getKnotFrameVectors( _parentKnotIndex )
-            );
-        }
+            _spline.setFirstFrame
+                (_parentBranch->getKnotFrameVectors( _parentKnotIndex ));
 
-    _spline.calcSpline();
+    if(branchProfileSpline)
+        _lastScale = branchProfileSpline->calcProfileAtPercent( 1.0 ) * baseScale;
+
     osg::ref_ptr<osg::Geode> gd = new osg::Geode;
-    gd->addDrawable(_spline.drawExtrudedCylinder(3, 0.15f));
+    gd->addDrawable(_spline.buildExtrudedShape(cylinderRes,
+                                               baseScale,
+                                               branchProfileSpline));
+
+    if(branchTex)
+    {
+        osg::StateSet* state = gd->getOrCreateStateSet();
+        state->setTextureAttributeAndModes(0,branchTex,osg::StateAttribute::ON);
+    }
+        
+
     addChild( gd.release() );
 }
 
@@ -131,7 +157,7 @@ void BranchNode::addFlower(osg::Matrix &mat)
     if(_flower.get() == 0)
         return;
     
-    osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform(mat);
+    osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform();
     trans->setMatrix( mat );
     trans->addChild( _flower.get() );
     addChild( trans.release() );
@@ -139,7 +165,8 @@ void BranchNode::addFlower(osg::Matrix &mat)
 
 void BranchNode::buildLeaves(unsigned int leavesCount,
                              float distributionAngle,
-                             NaturalCubicSpline* profileSpline,
+                             float leavesScale,
+                             NaturalCubicSpline* leavesScaleSpline,
                              NaturalCubicSpline* leavesSpline)
 {
     if(_leavesGeodes.size() == 0)
@@ -159,7 +186,7 @@ void BranchNode::buildLeaves(unsigned int leavesCount,
     }
     else
     {
-        leavesSpline->calcSpline(leavesCount);
+        leavesSpline->recalcSpline(leavesCount);
         sp_verts = new osg::Vec3Array( *(leavesSpline->getVertices()) );
     }
 
@@ -172,12 +199,13 @@ void BranchNode::buildLeaves(unsigned int leavesCount,
         
         osg::ref_ptr<osg::MatrixTransform> transMat = new osg::MatrixTransform();
 
-        if(profileSpline)
+        if(leavesScaleSpline)
         {
-            profile_scale = profileSpline->calcProfileAtPercent( i/(float) vert_count);
+            profile_scale = leavesScaleSpline->calcProfileAtPercent( i/(float) vert_count);
             transMat->postMult(osg::Matrix::scale(profile_scale, profile_scale, profile_scale));
         }
-         
+        
+        transMat->postMult(osg::Matrix::scale(leavesScale, leavesScale, leavesScale));
         transMat->postMult(osg::Matrix::rotate(distributionAngle*i, 0,0,1));
         transMat->postMult(_spline.calcFrameAt(t));
         transMat->addChild(_leavesGeodes[0]);

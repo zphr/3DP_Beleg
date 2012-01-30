@@ -2,33 +2,55 @@
 using namespace std;
 
 LSysPlant::LSysPlant(
-    unsigned int repeats,
-    float delta,
-    osg::Vec4 distanceVector,
-    osg::Matrix rotMatrix,
-    FlowerGroup* flower,
+    unsigned int       repeats,
+    float              delta,
+    osg::Vec4          distanceVector,
+    osg::Matrix        rotMatrix,
+    float              baseScale,
+    float              relativeLevelScale,
+    unsigned int       translationJitter,
+    unsigned int       rotationJitter,
+    string             branchImgPath,
+    NaturalCubicSpline branchProfile,
+    FlowerGroup*       flower,
     vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
-    unsigned int leavesLevel,
-    unsigned int leavesCount,
-    float leavesDistributionAngle,
+    unsigned int       leavesLevel,
+    unsigned int       leavesCount,
+    float              leavesDistributionAngle,
+    float              leavesBaseScale,
+    float              leavesRelativeScale,
     NaturalCubicSpline leavesProfile,
     NaturalCubicSpline leavesSpline,
-    map<char,string> rules,
-    string startWord,
-    string variable)
+    map<char,string>   rules,
+    string             startWord,
+    string             variable)
     : _repeats(repeats),
    _delta(delta),
    _rules(rules),
    _startWord(startWord),
    _distanceVector(distanceVector),
    _rotMatrix(rotMatrix),
+   _baseScale(baseScale),
+   _translationJitter(translationJitter),
+   _rotationJitter(rotationJitter),
+   _relativeLevelScale(relativeLevelScale),
+   _branchProfile(branchProfile),
    _variable(variable),
    _leavesCount(leavesCount),
    _leavesDistributionAngle(leavesDistributionAngle),
+   _leavesBaseScale(leavesBaseScale),
+   _leavesRelativeScale(leavesRelativeScale),
    _leavesProfile(leavesProfile),
    _leavesSpline(leavesSpline)
 {
-    
+    osg::ref_ptr<osg::Image> branch_img = osgDB::readImageFile(branchImgPath);
+
+    _branchTex = new osg::Texture2D();
+    _branchTex->setWrap(osg::Texture2D::WRAP_R, osg::Texture2D::REPEAT);
+    _branchTex->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);
+    _branchTex->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::REPEAT);
+    _branchTex->setImage( branch_img.release() );
+
     _leavesGeodes = leavesGeodes;
     _leavesLevel = leavesLevel;
     
@@ -93,6 +115,44 @@ void LSysPlant::generatePlantWord()
 
     _startWord = word;
 }
+inline void LSysPlant::randomizeTranslation(double &length)
+{
+    float random_trans;
+    float random_pos_neg;
+
+    random_pos_neg = (1.0-((rand()%2)*2));
+    random_trans = (rand() % _translationJitter)/100.0 * random_pos_neg;
+    length += length * random_trans;
+}
+
+inline void LSysPlant::randomizeRotation(float angle, char direction)
+{
+    float random_rot;
+    float random_pos_neg;
+
+    float rand_angle = angle * _rotationJitter/100.0;
+    random_pos_neg = (1.0-((rand()%2)*2));
+
+    random_rot = (rand() % _rotationJitter)/100.0 * random_pos_neg;
+    rand_angle += rand_angle * random_rot;
+
+    if((direction == 'x') || (direction == 'X'))
+        RotMatX(rand_angle, _rotMatrix);
+
+    if((direction == 'y') || (direction == 'Y'))
+        RotMatY(rand_angle, _rotMatrix);
+
+    if((direction == 'z') || (direction == 'Z'))
+        RotMatZ(rand_angle, _rotMatrix);
+
+}
+
+inline void LSysPlant::randomizeRotAllDirections(float angle)
+{
+    randomizeRotation(angle, 'X');
+    randomizeRotation(angle, 'Y');
+    randomizeRotation(angle, 'Z');
+}
 
 void LSysPlant::generatePlant()
 {
@@ -105,6 +165,8 @@ void LSysPlant::generatePlant()
 
     _firstBranch->addKnot( vec );
     BranchNode* currentBranch = _firstBranch;
+
+    srand ( time(NULL) );
 
     for(int i = 0; i < _startWord.length(); i++)
     {
@@ -143,6 +205,9 @@ void LSysPlant::generatePlant()
                 }
             }
         }
+        
+        randomizeTranslation(f_result);
+
 
         switch(_startWord[i])
         { 
@@ -163,31 +228,37 @@ void LSysPlant::generatePlant()
         }
         case '+':
         {
+            randomizeRotAllDirections(angle);
             RotMatZ(angle, _rotMatrix);
             break;
         }
         case '-':
         {
+            randomizeRotAllDirections(angle);
             RotMatZ(-angle, _rotMatrix);
             break;
         }
         case '&':
         {
+            randomizeRotAllDirections(angle);
             RotMatY(angle, _rotMatrix);
             break;
         }
         case '^':
         {
+            randomizeRotAllDirections(angle);
             RotMatY(-angle, _rotMatrix);
             break;
         }
         case '{':
         {
+            randomizeRotAllDirections(angle);
             RotMatX(angle, _rotMatrix);
             break;
         }
         case '}':
         {
+            randomizeRotAllDirections(angle);
             RotMatX(-angle, _rotMatrix);
             break;
         }
@@ -199,7 +270,9 @@ void LSysPlant::generatePlant()
         }
         case '@':
         {
-            currentBranch->addFlower(osg::Matrix(_rotMatrix).translate(vec.x(), vec.y(), vec.z()));
+            osg::Matrix mat(osg::Matrix().inverse(_rotMatrix));
+            mat.postMult(osg::Matrix().translate(vec.x(), vec.y(), vec.z()));
+            currentBranch->addFlower(mat);
             break;
         }
         // Stack Push 
@@ -307,10 +380,20 @@ osg::Group* LSysPlant::buildPlant()
     generatePlantWord();
     generatePlant();
 
+    
+
     osg::ref_ptr<BranchVisitor> branch_visitor =
-        new BranchVisitor(_leavesLevel,
+        new BranchVisitor(_baseScale,
+                          _relativeLevelScale,
+                          3,
+                          6,
+                          _branchTex.get(),
+                          &_branchProfile,
+                          _leavesLevel,
                           _leavesCount,
                           _leavesDistributionAngle,
+                          _leavesBaseScale,
+                          _leavesRelativeScale,
                           &_leavesProfile,
                           &_leavesSpline);
 

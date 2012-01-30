@@ -1,14 +1,32 @@
 #include "NaturalCubicSpline.h"
 
+NaturalCubicSpline::NaturalCubicSpline()
+{
+    
+    _splineRes = 3;
+    _extrudeShape = new CircleCurve(3);
+    _profile = 0;
+    _firstFrameX = osg::Vec3(1,0,0);
+    _firstFrameY = osg::Vec3(0,1,0);
+    _firstFrameZ = osg::Vec3(0,0,1);
+
+    _knots = new osg::Vec4Array;
+    _knots->push_back( osg::Vec4(0,0,0,1));
+    _knots->push_back( osg::Vec4(1,1,0,1));
+
+    _geometry = new osg::Geometry;
+
+    calcSpline();
+}
 
 NaturalCubicSpline::NaturalCubicSpline(
-        int curveSteps,
+        int splineRes,
         BaseCurve *extrudeShape,
         NaturalCubicSpline* profile,
         osg::Vec3 firstFrameX,
         osg::Vec3 firstFrameY,
         osg::Vec3 firstFrameZ)
-:  _curveSteps(curveSteps)
+:  _splineRes(splineRes)
 {
     _extrudeShape = extrudeShape;
 
@@ -24,17 +42,19 @@ NaturalCubicSpline::NaturalCubicSpline(
     _profile = profile;
 
     _geometry = new osg::Geometry;
+
+    calcSpline();
 }
 
 NaturalCubicSpline::NaturalCubicSpline(
         osg::ref_ptr<osg::Vec4Array> knots,
-        int curveSteps,
+        int splineRes,
         BaseCurve *extrudeShape,
         NaturalCubicSpline* profile,
         osg::Vec3 firstFrameX,
         osg::Vec3 firstFrameY,
         osg::Vec3 firstFrameZ)
-:  _knots(knots.get()), _curveSteps(curveSteps)
+:  _knots(knots.get()), _splineRes(splineRes)
 {
     _extrudeShape = extrudeShape;
 
@@ -91,12 +111,12 @@ inline osg::Matrix NaturalCubicSpline::getFrame(int n, int stepping)
 
 inline osg::Matrix NaturalCubicSpline::getKnotFrame(int n)
 {
-    return getFrame(n, _curveSteps);
+    return getFrame(n, _splineRes);
 }
 
 osg::Vec3Array* NaturalCubicSpline::getKnotFrameVectors(int n)
 {
-    return getFrameVectors(n, _curveSteps);
+    return getFrameVectors(n, _splineRes);
 }
 
 osg::Vec3Array* NaturalCubicSpline::getFrameVectors(int n, int stepping)
@@ -125,10 +145,10 @@ osg::Vec3Array* NaturalCubicSpline::getFrameVectors(int n, int stepping)
 
 void NaturalCubicSpline::setKnots(osg::Vec4Array* knots)
 {
-    // TODO: hier wird doch sicherlich nur der Pointer übergeben ->
-    // könnte Probleme geben, allerdings sind dann die Daten auch
-    // neu...
-    _knots = knots;
+    if(_knots)
+        _knots.release();
+    _knots = new osg::Vec4Array( *knots );
+    calcSpline();
 }
 
 void NaturalCubicSpline::calcPolynomialsXYZ()
@@ -246,18 +266,17 @@ osg::Vec3 NaturalCubicSpline::calcTangentAt(int i, float t)
     return tangent;
 }
 
-osg::Geometry* NaturalCubicSpline::drawExtrudedCylinder(unsigned int resolution, float scale)
+osg::Geometry* NaturalCubicSpline::buildExtrudedShape(unsigned int extrudeRes,
+                                                      float scale,
+                                                      NaturalCubicSpline *profileCurve)
 {
-    // wenn die Basisdaten noch nicht berechnet wurden dann sollte man
-    // das mal anstoßen
-    if((_vertices == 0) || (_matrices.size() == 0))
-         calcSpline();
+    calcSpline();
 
-    return (_extrudeShape->buildMeshAlongPath(resolution,
+    return (_extrudeShape->buildMeshAlongPath(extrudeRes,
                                               scale,
                                               _matrices,
                                               _vertices,
-                                              _profileScale));
+                                              profileCurve));
 }
 
 osg::Geometry* NaturalCubicSpline::drawTangentFrames()
@@ -335,6 +354,10 @@ osg::Geometry* NaturalCubicSpline::drawTangentFrame(osg::Matrix mat)
 
 void NaturalCubicSpline::calcTangentFrames()
 {
+    
+    if(_matrices.size())
+        _matrices.clear();
+
     osg::ref_ptr<osg::Vec3Array> r = new osg::Vec3Array;
     osg::ref_ptr<osg::Vec3Array> s = new osg::Vec3Array;
 
@@ -463,14 +486,18 @@ float NaturalCubicSpline::calcProfileAt(float t)
                   z/max_z);
 
     return y;
+
 }
 
-void NaturalCubicSpline::calcSpline(int resolution)
+void NaturalCubicSpline::recalcSpline(unsigned int splineRes)
+{
+    _splineRes = splineRes;
+    calcSpline();
+}
+
+void NaturalCubicSpline::calcSpline()
 {
     calcPolynomialsXYZ();
-
-    if(resolution < 0)
-        resolution = _curveSteps;
 
     if(_vertices)
         _vertices.release();
@@ -479,7 +506,7 @@ void NaturalCubicSpline::calcSpline(int resolution)
     if(_tangents)
         _tangents.release();
     _tangents = new osg::Vec3Array;
-
+    
     _vertices->push_back( calcAt(0, 0) );
     _tangents->push_back( calcTangentAt(0, 0) );
 
@@ -491,9 +518,9 @@ void NaturalCubicSpline::calcSpline(int resolution)
     float u = 0.0f;
     for(int i=0; i < _knots->getNumElements()-1; i++)
     {
-        for(int j = 1; j <=resolution; j++)
+        for(int j = 1; j <=_splineRes; j++)
         {
-            u = j / (float) resolution;
+            u = j / (float) _splineRes;
 
             _vertices->push_back( calcAt(i, u) );
             _tangents->push_back( calcTangentAt(i, u) );
@@ -561,70 +588,82 @@ inline osg::Vec3 NaturalCubicSpline::convVec4To3(const osg::Vec4 &vec4)
     return osg::Vec3(vec4.x(), vec4.y(), vec4.z());
 }
 
-osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
+osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeRes,
                                                       float scale,
                                                       const vector<osg::Matrix> &matrices,
                                                       const osg::ref_ptr<osg::Vec3Array> &vertices,
-                                                      const vector<float> &profileScale)
+                                                      BaseCurve* profileCurve)
 {
 
-    unsigned int elements = vertices->getNumElements();
+    unsigned int spline_vert_count = vertices->getNumElements();
     int k = 0;
 
-    osg::ref_ptr<osg::Vec4Array> shape_verts = calcPoints(resolution);
+    //   ^  ^  ^     ^
+    //   +--+--+ ... +
+    //   |  |  |     |
+    //   0--0--0--0--0->
+    //   |  |  |     |   0: vertices
+    //   +--+--+ ... +   +: extrude_verts
+    osg::ref_ptr<osg::Vec4Array> extrude_verts = calcPoints(extrudeShapeRes);
 
     // die Auflösung wird für ein NaturalCubicSpline zwischen den
     // Segmenten angegeben, daher muss noch die absolute Auflösung
     // geholt werden!
-    resolution = shape_verts->getNumElements();
+    extrudeShapeRes = extrude_verts->getNumElements();
 
     osg::Vec4 vert;
-    osg::ref_ptr<osg::Vec4Array> verts = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec4Array> new_verts = new osg::Vec4Array;
 
     osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
 
     osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
-    float tex_width  = 1.0 / (resolution-1);
-    float tex_height = 1.0 / (elements-1);
+    float tex_width  = 1.0 / (extrudeShapeRes-1);
+    float tex_height = 1.0 / (spline_vert_count-1);
     
     vector<float> v_lengths = mapLengthForUV(vertices);
-    vector<float> u_lengths = mapLengthForUV(shape_verts);
+    vector<float> u_lengths = mapLengthForUV(extrude_verts);
 
-    for(int i=0; i < elements; i++)
+    float tile_u = 1.0;
+    float tile_v = 1.0;
+
+    float profile_scale = 1.0;
+
+    for(int i=0; i < spline_vert_count; i++)
     {
         tex_height = v_lengths[i];
+                    
+        if(profileCurve)
+            profile_scale = profileCurve->calcProfileAtPercent(
+                i / (float)(spline_vert_count-1) );
         
-        for(int j=0; j < shape_verts->getNumElements(); j++)
+        for(int j=0; j < extrude_verts->getNumElements(); j++)
         {
             tex_width = u_lengths[j];
             
-            vert = osg::Vec4((*shape_verts)[j]);
+            vert = osg::Vec4((*extrude_verts)[j]);
             vert *= scale;
-            
-            if(profileScale.size() == elements)
-                vert *= profileScale[i];
+            vert *= profile_scale;
 
             vert[3] = 1;
             vert =  vert * matrices[i];
 
-            verts->push_back(vert);
+            new_verts->push_back(vert);
             
-            // texc->push_back(osg::Vec2(tex_width * j, tex_height *
-            // i));
-            texc->push_back(osg::Vec2(tex_width, tex_height));
+            texc->push_back(osg::Vec2(tex_width  * tile_u,
+                                      tex_height * tile_v));
 
-            if((i < (elements-1)) && (j < (resolution-1)))
+            if((i < (spline_vert_count-1)) && (j < (extrudeShapeRes-1)))
             {
-                face_indices->push_back( i * resolution + j );
-                face_indices->push_back( i * resolution + (j + 1));
-                face_indices->push_back( (i+1) * resolution + (j + 1));
-                face_indices->push_back( (i+1) * resolution + j);
+                face_indices->push_back( i * extrudeShapeRes + j );
+                face_indices->push_back( i * extrudeShapeRes + (j + 1));
+                face_indices->push_back( (i+1) * extrudeShapeRes + (j + 1));
+                face_indices->push_back( (i+1) * extrudeShapeRes + j);
             }
         }
     }
     
     osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
-    int vert_count = verts->getNumElements();
+    int vert_count = new_verts->getNumElements();
     osg::Vec3 n;
 
     osg::Vec3 e1, e2, e3, e4;
@@ -632,29 +671,29 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
     for(int i=0; i < vert_count; i++)
     {
         
-        int imodr = (i % resolution);
+        int imodr = (i % extrudeShapeRes);
         if(imodr == 0)
         {
             // Unten ganz links
             if(i == 0)
             {
-                e2 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
-                e3 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
+                e3 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
                 n = e3 ^ e2;
             }
             // Oben ganz links
-            else if(i == (vert_count-resolution))
+            else if(i == (vert_count-extrudeShapeRes))
             {
-                e1 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
-                e2 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+                e1 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
                 n = e2 ^ e1;
             }
             // am linken Rand 
             else
             {
-                e1 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
-                e2 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
-                e3 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
+                e1 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
+                e3 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
 
                 n = e2 ^ e1;
                 n += e3 ^ e2;
@@ -662,31 +701,31 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
             }
 
         }
-        else if(imodr == (resolution-1))
+        else if(imodr == (extrudeShapeRes-1))
         {
 
             // Unten ganz rechts
-            if(i == (resolution-1))
+            if(i == (extrudeShapeRes-1))
             {
-                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
-                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
+                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
 
                 n = e2 ^ e1;
             }
             // Oben ganz rechts
             else if(i == (vert_count-1))
             {
-                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
-                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
+                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
 
                 n = e3 ^ e2;
             }
             // rechter Rand
             else
             {
-                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
-                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
-                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
+                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
+                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
 
                 n = e2 ^ e1;
                 n += e3 ^ e2;
@@ -697,22 +736,22 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
         else
         {
             // Unterer Rand
-            if( (i / resolution) == 0)
+            if( (i / extrudeShapeRes) == 0)
             {
-                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
-                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
-                e4 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
+                e4 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
 
                 n = e2 ^ e1;
                 n += e1 ^ e4;
                 n /= 2;
             }
             // Oberer Rand
-            else if((i/(vert_count - resolution) <= 1))
+            else if((i/(vert_count - extrudeShapeRes) <= 1))
             {
-                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
-                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
-                e4 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
+                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e4 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
 
                 n = e3 ^ e2;
                 n += e4 ^ e3;
@@ -721,10 +760,10 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
             // in der Mitte
             else
             {
-                e1 = (convVec4To3((*verts)[i+resolution]) - convVec4To3((*verts)[i]));
-                e2 = (convVec4To3((*verts)[i-1]) - convVec4To3((*verts)[i]));
-                e3 = (convVec4To3((*verts)[i-resolution]) - convVec4To3((*verts)[i]));
-                e4 = (convVec4To3((*verts)[i+1]) - convVec4To3((*verts)[i]));
+                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
+                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e4 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
 
                 n = e2 ^ e1;
                 n += e3 ^ e2;
@@ -739,7 +778,7 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
     }
 
     osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
-    geom->setVertexArray( verts.get() );
+    geom->setVertexArray( new_verts.get() );
     geom->setNormalArray( normals.get() );
     geom->setNormalBinding( osg::Geometry::BIND_PER_VERTEX );
     geom->setTexCoordArray(0,texc.get());
@@ -748,9 +787,9 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int resolution,
     return geom.release();
 }
 
-osg::Vec4Array* NaturalCubicSpline::calcPoints(unsigned int resolution)
+osg::Vec4Array* NaturalCubicSpline::calcPoints(unsigned int splineRes)
 {
-    _curveSteps = resolution;
+    _splineRes = splineRes;
     calcSpline();
 
     osg::ref_ptr<osg::Vec4Array> vecs = new osg::Vec4Array();

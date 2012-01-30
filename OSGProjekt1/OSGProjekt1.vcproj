@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="osgd.lib osgGAd.lib osgDBd.lib osgViewerd.lib osgTextd.lib osgUtild.lib OpenThreadsd.lib osgAnimationd.lib osgManipulatord.lib"
+				AdditionalDependencies="osgd.lib osgGAd.lib osgDBd.lib osgViewerd.lib osgTextd.lib osgShadowd.lib osgUtild.lib OpenThreadsd.lib osgAnimationd.lib osgManipulatord.lib osgParticled.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="C:\OpenSceneGraph_301D\lib"
 				GenerateDebugInformation="true"

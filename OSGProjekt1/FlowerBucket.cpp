@@ -188,7 +188,7 @@ osg::Geometry* FlowerBucket::buildBoxWalls(osg::ref_ptr<osg::Vec3Array> verts,
     osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
     
     // Länge der Gegenkathete
-    float opposite = cos(osg::DegreesToRadians(45.0)) * inset;
+    float opposite = sin(osg::DegreesToRadians(45.0)) * inset;
 
     // Gesamtlänge U
     float length_u = height + 2*opposite;

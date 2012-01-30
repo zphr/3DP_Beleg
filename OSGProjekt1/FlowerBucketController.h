@@ -17,15 +17,20 @@ using namespace std;
 class FlowerBucketController : public osgGA::GUIEventHandler, public FlowerBucketCtrlBase
 {
     public:
-    FlowerBucketController(osg::Group* root, float pickExpansion = 10.0);
+    FlowerBucketController(osg::Group* root,
+                           unsigned int traversalMask,
+                           float pickExpansion = 10.0);
     FlowerBucketController(osg::Group* root, 
                            vector< osg::ref_ptr<osg::Geometry> > groundGeoms,
-                          float pickExpansion = 10.0);
+                           unsigned int traversalMask,
+                           float pickExpansion = 10.0);
     ~FlowerBucketController();
     virtual bool handle( const osgGA::GUIEventAdapter& ea,
                          osgGA::GUIActionAdapter& aa );
     
     protected:
+    unsigned int _traversalMask;
+    
     inline void setupRectangle(osg::Vec3 hitVec);
     inline void setupPickPlane(osg::Vec3 hitVec);
     inline void removeHelper(osg::Geometry* geom);

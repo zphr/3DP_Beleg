@@ -2,9 +2,12 @@
 
 
 FlowerBucketController::FlowerBucketController(osg::Group* root,
-                                               float pickExpansion)
+                                               unsigned int traversalMask,
+                                               float pickExpansion
+                                              )
     :_root(root),
      _hOffsetVec(osg::Vec3(0,0,0.01)),
+     _traversalMask(traversalMask),
      _pickExpansion(pickExpansion),
      _drawRect(false),
      _currentGround(0)
@@ -14,9 +17,11 @@ FlowerBucketController::FlowerBucketController(osg::Group* root,
 
 FlowerBucketController::FlowerBucketController(osg::Group* root, 
                                                vector< osg::ref_ptr<osg::Geometry> > groundGeoms,
+                                               unsigned int traversalMask,
                                                float pickExpansion)
     :_root(root),
      _hOffsetVec(osg::Vec3(0,0,0.01)),
+     _traversalMask(traversalMask),
      _pickExpansion(pickExpansion),
      _drawRect(false),
      _groundGeoms( groundGeoms ),
@@ -61,6 +66,12 @@ inline void FlowerBucketController::setupRectangle(osg::Vec3 hitVec)
 
     osg::ref_ptr<osg::Geode> rect_gd = new osg::Geode();
     rect_gd->addDrawable( _rectGeom.get() );
+
+    osg::ref_ptr<osg::StateSet> state = rect_gd->getOrCreateStateSet();
+    state->setMode(GL_DEPTH_TEST,osg::StateAttribute::OFF);
+    state->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
+    state->setRenderBinDetails( 11, "RenderBin");
+
     _root->addChild( rect_gd.get() );
 
 }
@@ -124,6 +135,7 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
                 osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
 
         osgUtil::IntersectionVisitor iv( intersector.get() );
+        iv.setTraversalMask( ~_traversalMask );
         viewer->getCamera()->accept( iv );
 
         // wenn nichts geschnitten wurde abbrechen!
@@ -196,8 +208,6 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
             ea.getButton()    == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
             (ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_ALT) )
         {
-            // removeHelper( _pickGeom.release() );
-
             osg::Vec3 draw_direction_vec = (*_rectVerts)[2] - (*_rectVerts)[0];
             osg::Vec3 new_origin;
 
@@ -240,6 +250,7 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
 
             _drawRect = false;
             _currentGround = 0;
+            removeHelper( _rectGeom.release() );
         }
 
     }
