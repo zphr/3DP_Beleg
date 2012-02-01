@@ -18,13 +18,6 @@
 #pragma once
 using namespace std;
 
-struct PlantStackElement
-{
-    osg::Vec4 _posVector;         /* vorherige Position */
-    osg::Matrix _rotMatrix;       /* vorherige Rotation */
-    osg::Vec4 _distanceVector;    /* vorheriger Richtungsvektor */
-    BranchNode* _parentBranch;    /* Zeiger auf den Eltern-Ast */
-};
 
 class LSysPlant
 {
@@ -40,6 +33,8 @@ class LSysPlant
               unsigned int       rotationJitter,
               string             branchImgPath,
               NaturalCubicSpline branchProfile,
+              float              baseFlowerScale,
+              float              relativeFlowerScale,
               FlowerGroup*       flower,
               vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
               unsigned int       leavesLevel,
@@ -59,6 +54,15 @@ class LSysPlant
     osg::Group* buildPlant();
   
   protected:
+
+    struct PlantStackElement
+    {
+      osg::Vec4 _posVector;         /* vorherige Position */
+      osg::Matrix _rotMatrix;       /* vorherige Rotation */
+      osg::Vec4 _distanceVector;    /* vorheriger Richtungsvektor */
+      BranchNode* _parentBranch;    /* Zeiger auf den Eltern-Ast */
+    };
+
     string getParanthesesContent(int str_pos, string str, int &para_end);
     inline void RotMatX(float angle, osg::Matrix &mat);
     inline void RotMatY(float angle, osg::Matrix &mat);
@@ -103,6 +107,8 @@ class LSysPlant
     FunctionParser _fparser;
   
     osg::ref_ptr<FlowerGroup> _flower;
+    float                     _baseFlowerScale;
+    float                     _relativeFlowerScale;
     
 };
 

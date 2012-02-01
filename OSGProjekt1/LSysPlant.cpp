@@ -12,6 +12,8 @@ LSysPlant::LSysPlant(
     unsigned int       rotationJitter,
     string             branchImgPath,
     NaturalCubicSpline branchProfile,
+    float              baseFlowerScale,
+    float              relativeFlowerScale,
     FlowerGroup*       flower,
     vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
     unsigned int       leavesLevel,
@@ -35,6 +37,8 @@ LSysPlant::LSysPlant(
    _rotationJitter(rotationJitter),
    _relativeLevelScale(relativeLevelScale),
    _branchProfile(branchProfile),
+   _baseFlowerScale(baseFlowerScale),
+   _relativeFlowerScale(relativeFlowerScale),
    _variable(variable),
    _leavesCount(leavesCount),
    _leavesDistributionAngle(leavesDistributionAngle),
@@ -205,14 +209,12 @@ void LSysPlant::generatePlant()
                 }
             }
         }
-        
-        randomizeTranslation(f_result);
-
 
         switch(_startWord[i])
         { 
         case 'F':
         {
+            randomizeTranslation(f_result);
             vec += (_rotMatrix * (_distanceVector * (float)f_result));
             vec[3] = 1.0;
 
@@ -271,8 +273,11 @@ void LSysPlant::generatePlant()
         case '@':
         {
             osg::Matrix mat(osg::Matrix().inverse(_rotMatrix));
-            mat.postMult(osg::Matrix().translate(vec.x(), vec.y(), vec.z()));
-            currentBranch->addFlower(mat);
+            // mat.postMult(osg::Matrix().translate(vec.x(), vec.y(), vec.z()));
+            currentBranch->addFlower(mat,
+                                     osg::Vec3(vec.x(), vec.y(), vec.z()),
+                                     _baseFlowerScale * pow(_relativeFlowerScale, (float) level)
+                                    );
             break;
         }
         // Stack Push 
@@ -291,6 +296,7 @@ void LSysPlant::generatePlant()
             currentBranch = currentBranch->addChildBranch();
 
             _stack.push_back(new_item);
+            level++;
             break;
         }
         // Stack Pop
@@ -313,6 +319,7 @@ void LSysPlant::generatePlant()
             currentBranch = _stack[size]._parentBranch;
                 
             _stack.pop_back();
+            level--;
             break;
         }
         }

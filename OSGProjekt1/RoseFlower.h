@@ -8,5 +8,6 @@ class RoseFlower: public FlowerGroup
   ~RoseFlower();
   
   void calcAnimation(unsigned int index, osg::MatrixTransform* trans);
+  osg::Matrix animationStep(unsigned int index, float percent);
   
 };

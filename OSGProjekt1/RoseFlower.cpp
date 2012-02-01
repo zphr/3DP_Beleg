@@ -29,7 +29,24 @@ RoseFlower::RoseFlower()
     
     // ---------------------------------------- Körper Mesh
     _body = osgDB::readNodeFile("3d/Bluete.obj");
-    
+
+    osg::ref_ptr<osg::Texture2D> body_texture = new osg::Texture2D;
+    osg::ref_ptr<osg::Image> body_image = osgDB::readImageFile("3d/bluetenbasis.png");
+    body_texture->setImage(body_image.release());
+
+    osg::StateSet* body_state = _body->getOrCreateStateSet();
+    body_state->setTextureAttributeAndModes(0,body_texture,osg::StateAttribute::ON);
+    body_state->setMode(GL_BLEND, osg::StateAttribute::ON);
+
+    osg::BlendFunc* body_blend = new osg::BlendFunc;
+    body_blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+        
+    body_state->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+    osg::AlphaFunc* body_alphaFunc = new osg::AlphaFunc;
+    body_alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
+    body_state->setAttributeAndModes( body_alphaFunc, osg::StateAttribute::ON );
+
+
     // ---------------------------------------- Inside Mesh
     _inside = osgDB::readNodeFile("3d/Bluete_innen.obj");
     
@@ -39,7 +56,9 @@ RoseFlower::RoseFlower()
 
     osg::StateSet* state = _inside->getOrCreateStateSet();
     state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+
     
+
     // ---------------------------------------- Blüte
     
     // // -------------------- Blend
@@ -59,7 +78,7 @@ RoseFlower::RoseFlower()
     _time = 6.0;
     _samples = 8;
     
-    buildFlower();
+    buildFlower(false);
     
 }
 
@@ -87,7 +106,10 @@ void RoseFlower::calcAnimation(unsigned int index,
     
     osg::ref_ptr<osgAnimation::MatrixKeyframeContainer> matContainer = 
         channel->getOrCreateSampler()->getOrCreateKeyframeContainer();
-    
+
+    // Höhenverschiebung der Blätter
+    float h_offset = 0.275;
+
     for(int i=0; i<_samples; ++i)
     {
         osg::Quat rot_y(delta_rot_y * (float)i, osg::Y_AXIS);
@@ -102,7 +124,7 @@ void RoseFlower::calcAnimation(unsigned int index,
         
         // mat.postMult(osg::Matrix::scale(osg::Vec3(1.0/sqrt((float)index),1,1)));
         mat.postMult(osg::Matrix::rotate(delta_rot_y * i, 0,1,0));
-        mat.postMult(osg::Matrix::translate(0.006*index + r/sqrt((float)index),0,0.75));
+        mat.postMult(osg::Matrix::translate(0.006*index + r/sqrt((float)index),0,h_offset));
         mat.postMult(osg::Matrix::rotate(delta_rot_z * index, 0,0,1));
         mat.postMult(osg::Matrix::scale(osg::Vec3(.4,.4,.45)));
         
@@ -125,4 +147,28 @@ void RoseFlower::calcAnimation(unsigned int index,
     
     trans->setUpdateCallback( updater.get() );
         
+}
+
+osg::Matrix RoseFlower::animationStep(unsigned int index, float percent)
+{
+    float delta_rot_y = (osg::DegreesToRadians(10.0) * sqrt((float)index));
+    float delta_time = _time / (float) _samples;
+
+    // Höhenverschiebung der Blätter
+    float h_offset = 0.275;
+
+    osg::Matrix mat;
+    mat.postMult(osg::Matrix::scale(
+                     osg::Vec3(sqrt((float)index) / sqrt((float)index+1),
+                               sqrt((float)index) / sqrt((float)index+1),
+                               sqrt((float)index) / sqrt((float)index+1) )));
+
+    mat.postMult(osg::Matrix::rotate(delta_rot_y * percent, 0,1,0));
+    mat.postMult(osg::Matrix::translate(0.006*index + _petalStartRadius/sqrt((float)index),
+                                        0, h_offset));
+    mat.postMult(osg::Matrix::rotate(osg::DegreesToRadians(_distributionAngle) * index, 0,0,1));
+    mat.postMult(osg::Matrix::scale(osg::Vec3(.4,.4,.45)));
+
+    return mat;
+
 }

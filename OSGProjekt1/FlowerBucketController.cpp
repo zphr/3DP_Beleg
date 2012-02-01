@@ -140,9 +140,7 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
 
         // wenn nichts geschnitten wurde abbrechen!
         if ( !(intersector->containsIntersections()) )
-        {
             return false;
-        }
 
         if( ea.getEventType() == osgGA::GUIEventAdapter::PUSH              &&
             ea.getButton()    == osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON &&
@@ -162,7 +160,6 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
 
             osg::Vec3 hit_vec = result.getWorldIntersectPoint();
             setupRectangle( hit_vec );
-            // setupPickPlane( hit_vec );
 
             _drawRect = true;
 

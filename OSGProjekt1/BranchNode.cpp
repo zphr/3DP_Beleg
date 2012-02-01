@@ -152,13 +152,16 @@ void BranchNode::buildBranch(float baseScale,
     addChild( gd.release() );
 }
 
-void BranchNode::addFlower(osg::Matrix &mat)
+void BranchNode::addFlower(osg::Matrix &mat, osg::Vec3 transVec, float scale)
 {
     if(_flower.get() == 0)
         return;
     
     osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform();
-    trans->setMatrix( mat );
+    trans->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+    trans->postMult( osg::Matrix().scale( scale, scale, scale ) );
+    trans->postMult( mat );
+    trans->postMult( osg::Matrix().translate(transVec) );
     trans->addChild( _flower.get() );
     addChild( trans.release() );
 }

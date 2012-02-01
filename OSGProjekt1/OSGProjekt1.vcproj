@@ -345,6 +345,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ColorGradient.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CubicPolynomial.cpp"
 				>
 			</File>
@@ -397,11 +401,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PetalTransform.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RoseFlower.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\RoseLeaf.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Sun.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SunController.cpp"
 				>
 			</File>
 		</Filter>
@@ -424,6 +440,10 @@
 			</File>
 			<File
 				RelativePath=".\CircleCurve.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ColorGradient.h"
 				>
 			</File>
 			<File
@@ -471,11 +491,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PetalTransform.h"
+				>
+			</File>
+			<File
 				RelativePath=".\RoseFlower.h"
 				>
 			</File>
 			<File
 				RelativePath=".\RoseLeaf.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Sun.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SunController.h"
 				>
 			</File>
 		</Filter>

@@ -36,7 +36,7 @@ public:
     void deleteLastChild();
     inline int getChildrenCount();
     BranchNode* addChildBranch();
-    void addFlower(osg::Matrix &mat);
+    void addFlower(osg::Matrix &mat, osg::Vec3 transVec, float scale);
 
     /* Knoten-Methoden */
     int getKnotCount();

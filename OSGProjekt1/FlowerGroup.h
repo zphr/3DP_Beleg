@@ -1,5 +1,6 @@
 #include <osg/ShapeDrawable>
 #include <osg/Geometry>
+#include <osg/Material>
 #include <osgAnimation/BasicAnimationManager>
 #include <osgAnimation/UpdateMatrixTransform>
 #include <osgAnimation/StackedTranslateElement>
@@ -7,6 +8,7 @@
 #include <osgAnimation/StackedQuaternionElement>
 #include <osg/MatrixTransform>
 #include <osg/Geode>
+#include "PetalTransform.h"
 #include "NaturalCubicSpline.h"
 #include "LeafGeode.h"
 #include <iostream>
@@ -46,7 +48,7 @@ class FlowerGroup: public osg::Group
   protected:
     FlowerGroup();
     
-    virtual void buildFlower();
+    virtual void buildFlower(bool animate);
     virtual void calcAnimation(unsigned int index,
                                osg::MatrixTransform* trans);
 
@@ -60,5 +62,8 @@ class FlowerGroup: public osg::Group
     osg::ref_ptr<osgAnimation::BasicAnimationManager> _manager;
     unsigned int _samples;
     float _time;
+
+    osg::ref_ptr<osg::Material> _leavesMaterial; /* Blütenblatt-Material */
+    osg::ref_ptr<osg::Material> _baseMaterial; /* Knospen-Material */
 
 };

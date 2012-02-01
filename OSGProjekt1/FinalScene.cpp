@@ -26,7 +26,7 @@ void FinalScene::setupLight()
 void FinalScene::setupShadows()
 {
     _shadowSrc = new osg::LightSource;
-    _shadowSrc->getLight()->setPosition( osg::Vec4(4.0, -10.0, 10.0, 0.0) );
+    _shadowSrc->getLight()->setPosition( osg::Vec4(4.0, -10.0, 10.0, 1.0) );
     _shadowSrc->getLight()->setAmbient( osg::Vec4(0.2, 0.2, 0.2, 1.0));
     _shadowSrc->getLight()->setDiffuse( osg::Vec4(0.8, 0.8, 0.8, 1.0));
 

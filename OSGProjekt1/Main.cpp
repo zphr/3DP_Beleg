@@ -38,6 +38,9 @@
 #include <osgParticle/ModularProgram>
 #include <osgParticle/AccelOperator>
 
+#include "ColorGradient.h"
+#include "Sun.h"
+#include "SunController.h"
 #include "LSysPlant.h"
 #include "NaturalCubicSpline.h"
 #include "LeafGeode.h"
@@ -382,7 +385,7 @@ void extrudeSplineAlongSpline(osg::ref_ptr<osg::Group> &root)
     root->addChild(gd);
 }
 
-void PlantStringTest(osg::ref_ptr<osg::Group> &root)
+void PlantStringTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
 {
 
     map<char, string> rules;
@@ -435,15 +438,40 @@ void PlantStringTest(osg::ref_ptr<osg::Group> &root)
     NaturalCubicSpline profile(profile_points, 3);
 
     LSysPlant plant(3, delta, dist, rot_mat, 0.04, 0.70,
-                    30, 7,
-                    "3d/Stengel.png",
-                    profile,
-                    new RoseFlower(),
+                    30, 7,      // Jitter Prozente
+                    "3d/Stengel.png", profile,
+                    0.75, 0.90, new RoseFlower(),
                     leaf_list, 0, 5, 144.0, 1.0, 0.85,
                     spline, NaturalCubicSpline(),
                     rules, rules['S']);
 
-    root->addChild( plant.buildPlant() );
+    const unsigned int sunManipulatorMask = 0x55;
+    
+    osg::ref_ptr<osg::Group> plant_group = plant.buildPlant();
+    plant_group->setNodeMask( sunManipulatorMask );
+    root->addChild( plant_group.release() );
+
+    // ColorGradient colorGradient;
+    // colorGradient.addColorMarkerAt(0.0, osg::Vec4(0.535, 0.124, 0.004956, 1));
+    // colorGradient.addColorMarkerAt(0.09932, osg::Vec4(0.793, 0.181, 0.01435, 1));
+    // colorGradient.addColorMarkerAt(0.315, osg::Vec4(0.257, 0.256, 0.450, 1));
+    // colorGradient.addColorMarkerAt(0.432, osg::Vec4(0.257, 0.256, 0.450, 1));
+    // colorGradient.addColorMarkerAt(1.0, osg::Vec4(0.570, 0.688, 1.000, 1));
+
+    ColorGradient colorGradient;
+    // colorGradient.addColorMarkerAt(0.0, osg::Vec4(0.535, 0.330, 0.270, 1));
+    colorGradient.addColorMarkerAt(0.0, osg::Vec4(0.13375, 0.0825, 0.0675, 1));
+    colorGradient.addColorMarkerAt(0.09932, osg::Vec4(0.793, 0.487, 0.404, 1));
+    colorGradient.addColorMarkerAt(0.315, osg::Vec4(0.354, 0.353, 0.450, 1));
+    colorGradient.addColorMarkerAt(0.432, osg::Vec4(0.374, 0.373, 0.468, 1));
+    colorGradient.addColorMarkerAt(1.0, osg::Vec4(0.785, 0.844, 1.000, 1));
+
+    osg::ref_ptr<Sun> sun = new Sun(20.0, colorGradient, &viewer);
+    osg::ref_ptr<SunController> sun_ctrl = new SunController(sun.get(), sunManipulatorMask);
+    viewer.addEventHandler( sun_ctrl.release() );
+    root->addChild( sun.release() );
+
+
 }
 
 void DynamicTest(osg::ref_ptr<osg::Group> &root)
@@ -1041,7 +1069,7 @@ int main( int argc, char** argv)
     // LeafTest( root );
     // FlowerTest( root ); 
     // DynamicTest( root );
-    PlantStringTest( root );
+    PlantStringTest( root, viewer );
     // KuebelTestOld( root );
     // DynamicKuebelTest( root, viewer );
     // KuebelTest( root );

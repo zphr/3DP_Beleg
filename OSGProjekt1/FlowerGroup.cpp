@@ -28,7 +28,7 @@ FlowerGroup::FlowerGroup(
 
     _manager = new osgAnimation::BasicAnimationManager();
     
-    buildFlower();
+    buildFlower(true);
 }
 
 FlowerGroup::FlowerGroup(
@@ -58,7 +58,7 @@ FlowerGroup::FlowerGroup(
     
     _manager = new osgAnimation::BasicAnimationManager();
     
-    buildFlower();
+    buildFlower(true);
 }
 
 FlowerGroup::~FlowerGroup()
@@ -66,7 +66,7 @@ FlowerGroup::~FlowerGroup()
 
 }
 
-void FlowerGroup::buildFlower()
+void FlowerGroup::buildFlower(bool animate)
 {
     getOrCreateStateSet()->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
     // getOrCreateStateSet()->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
@@ -81,12 +81,14 @@ void FlowerGroup::buildFlower()
         i++, r = _petalStartRadius * sqrt((float)i))
     {
 
-        osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform;
+        osg::ref_ptr<PetalTransform> trans =
+            new PetalTransform(i, r, _distributionAngle);
         
         trans->addChild(_petalGeodes[0]);
         trans->setDataVariance( osg::Object::DYNAMIC );
-        
-        calcAnimation(i, trans.get());
+
+        if(animate)
+            calcAnimation(i, trans.get());
         
         insertChild(0, trans.release());
     }

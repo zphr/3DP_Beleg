@@ -1,13 +1,25 @@
 # Blender MTL File: 'Bluete.blend'
-# Material Count: 1
-newmtl gruen_untitled
+# Material Count: 2
+newmtl Blütenbasis_untitled.001
 Ns 96.078431
 Ka 0.000000 0.000000 0.000000
-Kd 0.092178 0.189630 0.074920
-Ks 0.056826 0.082474 0.057238
+Kd 0.903093 0.903093 0.903093
+Ks 0.027835 0.027835 0.027835
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd .
+map_Kd Bluete.blend\bluetenbasis.png
+
+
+newmtl Blütenrand_untitled.001
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.903093 0.903093 0.903093
+Ks 0.027835 0.027835 0.027835
+Ni 1.000000
+d 0.000000
+illum 2
+map_Kd Bluete.blend\bluetenbasis.png
+map_d D:\\Rettungsboot\\Studium\\Grafik\\Texturen\\Nature\\Flowers\\Flowers0199_14_H.png
 
 
