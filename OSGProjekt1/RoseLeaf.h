@@ -1,3 +1,4 @@
+#pragma once
 #include "LeafGeode.h"
 
 class RoseLeaf: public LeafGeode

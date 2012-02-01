@@ -38,6 +38,7 @@
 #include <osgParticle/ModularProgram>
 #include <osgParticle/AccelOperator>
 
+#include "FinalScene.h"
 #include "ColorGradient.h"
 #include "Sun.h"
 #include "SunController.h"
@@ -467,7 +468,7 @@ void PlantStringTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
     colorGradient.addColorMarkerAt(1.0, osg::Vec4(0.785, 0.844, 1.000, 1));
 
     osg::ref_ptr<Sun> sun = new Sun(20.0, colorGradient, &viewer);
-    osg::ref_ptr<SunController> sun_ctrl = new SunController(sun.get(), sunManipulatorMask);
+    osg::ref_ptr<SunController> sun_ctrl = new SunController(sun.get());
     viewer.addEventHandler( sun_ctrl.release() );
     root->addChild( sun.release() );
 
@@ -973,6 +974,14 @@ void ShadowTest(osg::ref_ptr<osg::Group> &rt, osgViewer::Viewer &viewer)
     viewer.setSceneData( root.get() );
 }
 
+
+void FinalFinalSceneTest(osgViewer::Viewer &viewer)
+{
+    FinalScene fs;
+    fs.run();
+}
+
+
 void FinalSceneTest(osg::ref_ptr<osgShadow::ShadowedScene> &root, osgViewer::Viewer &viewer)
 {
 
@@ -1045,7 +1054,7 @@ void FinalSceneTest(osg::ref_ptr<osgShadow::ShadowedScene> &root, osgViewer::Vie
 
 int main( int argc, char** argv)
 {
-    
+
     osg::ref_ptr<osg::Group> root = new osg::Group;
 
     osgViewer::Viewer viewer;
@@ -1069,7 +1078,7 @@ int main( int argc, char** argv)
     // LeafTest( root );
     // FlowerTest( root ); 
     // DynamicTest( root );
-    PlantStringTest( root, viewer );
+    // PlantStringTest( root, viewer );
     // KuebelTestOld( root );
     // DynamicKuebelTest( root, viewer );
     // KuebelTest( root );
@@ -1080,12 +1089,15 @@ int main( int argc, char** argv)
     // BucketControllerTest( root, viewer );
     // osg::ref_ptr<FlowerBucket> fb = new FlowerBucket();
     // DraggerTest( root, fb.get() );
+
+    // viewer.setSceneData( root.get() );
     
     // ShadowTest( root, viewer );
 
+    // viewer.getCamera()->setClearColor( osg::Vec4(0.5,0.5,0.5,1.0) );
+    // return viewer.run();
 
-    viewer.setSceneData( root );
-    viewer.getCamera()->setClearColor( osg::Vec4(0.5,0.5,0.5,1.0) );
-    return viewer.run();
+    
+    FinalFinalSceneTest(viewer);
 }
 

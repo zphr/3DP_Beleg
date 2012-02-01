@@ -67,3 +67,4 @@ class FlowerGroup: public osg::Group
     osg::ref_ptr<osg::Material> _baseMaterial; /* Knospen-Material */
 
 };
+

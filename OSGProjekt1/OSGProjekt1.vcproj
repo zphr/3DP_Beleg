@@ -361,6 +361,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FinalScene.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FlowerBucket.cpp"
 				>
 			</File>
@@ -459,6 +463,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FinalScene.h"
+				>
+			</File>
+			<File
 				RelativePath=".\FlowerBucket.h"
 				>
 			</File>
@@ -517,6 +525,10 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
+		<File
+			RelativePath=".\ClassDiagram1.cd"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

@@ -3,21 +3,23 @@
 
 // float Sun::_circleRadius = 1.0;
 float Sun::_zPos = 0.0;
-float Sun::_rotationAngle = 5.0;
+float Sun::_rotationAngle = 2.0;
 
 Sun::Sun(float circleRadius,
          ColorGradient colorGradient,
          osgViewer::Viewer *viewer,
+         unsigned int shadowMapRes,
          osg::Vec4 diffuseLight,
          osg::Vec4 specularLight,
          osg::Vec4 ambientLight)
     :_circleRadius(circleRadius),
-     _colorGradient(colorGradient),
-     _diffuseLight(diffuseLight),
-     _specularLight(specularLight),
-     _ambientLight(ambientLight),
-     _viewer(viewer),
-     _manualRotation(true)
+  _colorGradient(colorGradient),
+  _diffuseLight(diffuseLight),
+  _specularLight(specularLight),
+  _ambientLight(ambientLight),
+  _viewer(viewer),
+  _shadowMapRes(shadowMapRes),
+  _manualRotation(true)
 {
     _lastRotMatrix =  osg::Matrix().rotate(osg::DegreesToRadians(Sun::_rotationAngle), osg::X_AXIS);
     _autoTransform = new osg::AutoTransform;
@@ -28,15 +30,15 @@ Sun::Sun(float circleRadius,
     _sizeTransform->setMatrix(osg::Matrix::scale(200, 200, 200));
     _autoTransform->addChild(_sizeTransform.get());
 
-    _rotDragger = new osgManipulator::TrackballDragger;
-    _rotDragger->setName("TrackballDragger");
-    _rotDragger->setupDefaultGeometry();
-    _sizeTransform->addChild(_rotDragger.get());
+    // _rotDragger = new osgManipulator::TrackballDragger;
+    // _rotDragger->setName("TrackballDragger");
+    // _rotDragger->setupDefaultGeometry();
+    // _sizeTransform->addChild(_rotDragger.get());
     
-    _rotDragger->addTransformUpdating( this );
-    _rotDragger->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-    // _rotDragger->setHandleEvents(true);
-    _rotDragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_SHIFT);
+    // _rotDragger->addTransformUpdating( this );
+    // _rotDragger->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+    // // _rotDragger->setHandleEvents(true);
+    // _rotDragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_SHIFT);
 
     _vec = osg::Vec4(0.0, 0.0, _circleRadius, 1.0);
 
@@ -45,7 +47,12 @@ Sun::Sun(float circleRadius,
     _lightSrc->getLight()->setDiffuse( _diffuseLight );
     _lightSrc->getLight()->setSpecular( _specularLight );
     _lightSrc->getLight()->setAmbient( _ambientLight );
-    
+
+    _shadowMap = new osgShadow::ShadowMap;
+    _shadowMap->setLight( _lightSrc.get() );
+    _shadowMap->setTextureSize( osg::Vec2s(_shadowMapRes, _shadowMapRes) );
+    _shadowMap->setTextureUnit( 1 );
+
     addChild( _lightSrc.get() );
 
     setUpdateCallback(new SunCallback);
@@ -125,4 +132,9 @@ void Sun::setLastRotationMatrix(osg::Matrix lastRotMatrix)
 void Sun::rotateWithLastRotMatrix()
 {
     preMult(_lastRotMatrix);
+}
+
+osgShadow::ShadowMap* Sun::getShadowMap()
+{
+    return _shadowMap.get();
 }

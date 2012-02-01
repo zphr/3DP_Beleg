@@ -12,14 +12,16 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <osgShadow/ShadowedScene>
 #include <osgShadow/ShadowMap>
-
+#pragma once
 #include "LSysPlant.h"
+#include "Sun.h"
+#include "SunController.h"
 #include "NaturalCubicSpline.h"
 #include "LeafGeode.h"
 #include "FlowerGroup.h"
 #include "FlowerBucket.h"
-#include "RoseFlower.h"
 #include "RoseLeaf.h"
+#include "RoseFlower.h"
 #include "FencePart.h"
 #include "FencePartController.h"
 #include "FlowerBucketController.h"
@@ -31,27 +33,28 @@
 #include <math.h>
 using namespace std;
 
-class FinalScene()
+class FinalScene
 {
-  public:
+public:
     FinalScene();
     ~FinalScene();
 
-  protected:
+    void run();
+
+protected:
     const unsigned int _cullMask;
     const unsigned int _rcvShadowMask;
     const unsigned int _castShadowMask;
+    const unsigned int _intersectMask;
 
-    osg::ref_ptr<osg::LightSource> _shadowSrc;
-    osg::ref_ptr<osgShadow::ShadowMap> _shadowMap;
+    osg::ref_ptr<Sun> _sun;
 
-    osg::ref_ptr<osgShadow::ShadowMap> _shadowMap;
     osg::ref_ptr<osgShadow::ShadowedScene> _root;
-    osgViewer::Viewer viewer;
+    osgViewer::Viewer _viewer;
 
     void setupLight();
-    void setupShadows();
     void setupController();
     void setupBackground();
+    void setupRose();
         
 };

@@ -7,6 +7,9 @@
 #include <osgShadow/ShadowedScene>
 #include <osgShadow/ShadowMap>
 #include <osgViewer/Viewer>
+#include <osgShadow/ShadowedScene>
+#include <osgShadow/ShadowMap>
+
 #include "ColorGradient.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -18,6 +21,7 @@ class Sun: public osg::MatrixTransform
     Sun(float     circleRadius,
         ColorGradient colorGradient,
         osgViewer::Viewer *viewer,
+        unsigned int shadowMapRes = 1024,
         osg::Vec4 diffuseLight  = osg::Vec4(0.8, 0.8, 0.8, 1.0),
         osg::Vec4 specularLight = osg::Vec4(0.5, 0.5, 0.5, 1.0),
         osg::Vec4 ambientLight  = osg::Vec4(0.2, 0.2, 0.2, 1.0));
@@ -30,11 +34,14 @@ class Sun: public osg::MatrixTransform
     float getSunZPos();
     void dimLight( float percent );
     void setDraggerHandleEvents(bool handleEvents);
+
     void toggleManualRotation();
     bool getManualRotation();
     void setManualRotation(bool manualRotation);
     void setLastRotationMatrix(osg::Matrix lastRotMatrix);
     void rotateWithLastRotMatrix();
+
+    osgShadow::ShadowMap* getShadowMap();
 
   protected:
 
@@ -45,6 +52,9 @@ class Sun: public osg::MatrixTransform
     osg::Vec4 _diffuseLight;
     osg::Vec4 _specularLight;
     osg::Vec4 _ambientLight;
+    
+    osg::ref_ptr<osgShadow::ShadowMap> _shadowMap;
+    unsigned int _shadowMapRes;
 
     osg::ref_ptr<osg::AutoTransform> _autoTransform;
     osg::ref_ptr<osg::MatrixTransform> _sizeTransform;
