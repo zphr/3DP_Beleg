@@ -108,9 +108,7 @@ class LSysPlant
     float       _relativeLevelScale; // Ab-/Zunahme der Astdicke je Level
     
     vector<PlantStackElement>           _stack;
-    osg::ref_ptr<osg::Vec4Array>        _vertices;
-    osg::ref_ptr<osg::DrawElementsUInt> _indices;
-  
+
     FunctionParser _fparser;
   
     osg::ref_ptr<FlowerGroup> _flower;

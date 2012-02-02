@@ -12,7 +12,8 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <osgShadow/ShadowedScene>
 #include <osgShadow/ShadowMap>
-#pragma once
+
+#include "TrackballAxisDragger.hpp"
 #include "LSysPlant.h"
 #include "Sun.h"
 #include "SunController.h"
@@ -41,6 +42,7 @@ public:
     ~FinalScene();
 
     void run();
+    void toggleShadows();
 
 protected:
     const unsigned int _cullMask;
@@ -53,9 +55,40 @@ protected:
     osg::ref_ptr<osgShadow::ShadowedScene> _root;
     osgViewer::Viewer _viewer;
 
+    static bool _renderShadows;
+
     void setupLight();
     void setupController();
     void setupModels();
     void setupRose();
         
+};
+
+class FinalController : public osgGA::GUIEventHandler
+{ 
+  
+public:
+    FinalController(FinalScene* root)
+        :_root(root) {;}
+
+    ~FinalController(){;}
+
+    virtual bool handle( const osgGA::GUIEventAdapter& ea,
+                         osgGA::GUIActionAdapter& aa )
+        {
+            if( ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN &&
+                ea.getModKeyMask()&osgGA::GUIEventAdapter::MODKEY_SHIFT)
+            {
+                switch( ea.getKey() )
+                {
+                case 'S':
+                    _root->toggleShadows();
+                    return false;
+                }
+            }
+            return false;
+        }
+
+protected:
+    FinalScene* _root;
 };

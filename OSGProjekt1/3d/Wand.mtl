@@ -1,13 +1,13 @@
-# Blender MTL File: 'Wall4.blend'
+# Blender MTL File: 'Wall5.blend'
 # Material Count: 1
 newmtl Export_Wand_compl.png
 Ns 96.078431
 Ka 0.000000 0.000000 0.000000
-Kd 0.800000 0.800000 0.800000
+Kd 1.000000 1.000000 1.000000
 Ks 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 1
-map_Kd Wall4.blend\Wand_compl.png
+map_Kd Wall5.blend\Wand_compl.png
 
 

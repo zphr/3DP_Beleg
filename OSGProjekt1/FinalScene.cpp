@@ -1,5 +1,7 @@
 #include "FinalScene.h"
 
+bool FinalScene::_renderShadows = false;
+
 FinalScene::FinalScene()
 :_cullMask(0x99),
 _rcvShadowMask(0x1),
@@ -7,13 +9,16 @@ _castShadowMask(0x2),
 _intersectMask(0x16)
 {
     _root = new osgShadow::ShadowedScene;
-    _root->setReceivesShadowTraversalMask( _rcvShadowMask );
-    _root->setCastsShadowTraversalMask( _castShadowMask );
+    _root->setReceivesShadowTraversalMask( 0x0 );
+    _root->setCastsShadowTraversalMask( 0x0 );
 
     _viewer.getCamera()->setCullMask( ~_cullMask );
 
     setupModels();
     setupLight();
+
+    osg::ref_ptr<FinalController> final_ctrl = new FinalController( this );
+    _viewer.addEventHandler( final_ctrl.release() );
     
     _viewer.setSceneData( _root );
 }
@@ -34,9 +39,9 @@ void FinalScene::setupLight()
     colorGradient.addColorMarkerAt(0.432, osg::Vec4(0.374, 0.373, 0.468, 1));
     colorGradient.addColorMarkerAt(1.0, osg::Vec4(0.785, 0.844, 1.000, 1));
 
-    _sun = new Sun(40.0, colorGradient, &_viewer, 256);
+    _sun = new Sun(40.0, colorGradient, &_viewer, 512);
 
-    // _root->setShadowTechnique( _sun->getShadowMap() );
+    _root->setShadowTechnique( _sun->getShadowMap() );
     _root->addChild( _sun.get() );
 
     osg::ref_ptr<SunController> sun_ctrl = new SunController(_sun.get());
@@ -107,12 +112,11 @@ void FinalScene::setupModels()
 
     // erster Blumenkasten
     osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
-    _root->addChild( flower_bucket.get() );
 
     osg::ref_ptr<FencePartController> fence_part_ctrl =
         new FencePartController(_root.get(),
                                 _rcvShadowMask | _castShadowMask | _intersectMask,
-                                flower_bucket.release());
+                                flower_bucket.get());
     _viewer.addEventHandler( fence_part_ctrl.release() );
     
 
@@ -141,11 +145,48 @@ void FinalScene::setupModels()
     rose_trans->addChild( rose.releasePlant() );
     rose_trans->setMatrix( osg::Matrix().translate(2.5,0.5,1.1) );
 
-    _root->addChild( rose_trans.release() );
+    // ---------------------------------------- Dragger
+
+    osg::ref_ptr<osg::MatrixTransform> selection = new osg::MatrixTransform;
+    selection->addChild( flower_bucket.get() );
+    selection->addChild( rose_trans.release() );
+
+    _root->addChild( selection.get() );
+
+    osg::ref_ptr<TrackballAxisDragger> dragger =
+        new TrackballAxisDragger( flower_bucket->getBound().center(),
+                                  flower_bucket->getBound().radius() );
+    dragger->setupDefaultGeometry();
+
+    _root->addChild( dragger.get() );
+
+    dragger->addTransformUpdating( selection.release() );
+    dragger->setHandleEvents(true);
+    dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_ALT);
+    dragger->setNodeMask( ~_castShadowMask );
 }
 
 void FinalScene::run()
 {
     _viewer.run();
 }
+
+
+void FinalScene::toggleShadows()
+{
+    FinalScene::_renderShadows = !_renderShadows;
+
+    if(FinalScene::_renderShadows)
+    {
+        _root->setReceivesShadowTraversalMask( _rcvShadowMask );
+        _root->setCastsShadowTraversalMask( _castShadowMask );
+    }
+    else
+    {
+        _root->setReceivesShadowTraversalMask( 0x0 );
+        _root->setCastsShadowTraversalMask( 0x0 );
+        _root->cleanSceneGraph();
+    }
+}
+
 

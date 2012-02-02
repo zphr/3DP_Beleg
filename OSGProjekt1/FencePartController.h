@@ -7,6 +7,7 @@
 #include <osg/Geode>
 #include <osgViewer/Viewer>
 #include <osg/MatrixTransform>
+#include <osg/LineWidth>
 #include <vector>
 
 /* #define _USE_MATH_DEFINES */

@@ -54,7 +54,11 @@ FencePartController::FencePartController(osg::Group* root,
 
     osg::StateSet* HUDStateSet = new osg::StateSet();
     gd->setStateSet(HUDStateSet);
-    
+
+    osg::LineWidth* line_width = new osg::LineWidth();
+    line_width->setWidth(4.0f);
+    gd->getOrCreateStateSet()->setAttributeAndModes(line_width,osg::StateAttribute::ON);
+
     HUDModelViewMatrix->addChild( gd.release() );
 
     // Disable depth testing so geometry is draw regardless of depth values

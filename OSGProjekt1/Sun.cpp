@@ -1,6 +1,5 @@
 #include "Sun.h"
 
-
 // float Sun::_circleRadius = 1.0;
 float Sun::_zPos = 0.0;
 float Sun::_rotationAngle = 2.0;
@@ -21,24 +20,8 @@ Sun::Sun(float circleRadius,
   _shadowMapRes(shadowMapRes),
   _manualRotation(true)
 {
-    _lastRotMatrix =  osg::Matrix().rotate(osg::DegreesToRadians(Sun::_rotationAngle), osg::X_AXIS);
-    _autoTransform = new osg::AutoTransform;
-    _autoTransform->setAutoScaleToScreen(true);
-    addChild(_autoTransform.get());
-
-    _sizeTransform = new osg::MatrixTransform;
-    _sizeTransform->setMatrix(osg::Matrix::scale(200, 200, 200));
-    _autoTransform->addChild(_sizeTransform.get());
-
-    // _rotDragger = new osgManipulator::TrackballDragger;
-    // _rotDragger->setName("TrackballDragger");
-    // _rotDragger->setupDefaultGeometry();
-    // _sizeTransform->addChild(_rotDragger.get());
-    
-    // _rotDragger->addTransformUpdating( this );
-    // _rotDragger->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-    // // _rotDragger->setHandleEvents(true);
-    // _rotDragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_SHIFT);
+    _lastRotMatrix = osg::Matrix().rotate(
+        osg::DegreesToRadians(Sun::_rotationAngle), osg::X_AXIS);
 
     _vec = osg::Vec4(0.0, 0.0, _circleRadius, 0.0);
 
@@ -56,6 +39,8 @@ Sun::Sun(float circleRadius,
     addChild( _lightSrc.get() );
 
     setUpdateCallback(new SunCallback);
+
+    preMult( osg::Matrix().rotate(osg::DegreesToRadians(20.0), osg::X_AXIS) );
 }
 
 Sun::~Sun()
@@ -63,21 +48,16 @@ Sun::~Sun()
     
 }
 
-void Sun::setDraggerHandleEvents(bool handleEvents)
-{
-    _rotDragger->setHandleEvents(handleEvents);
-}
-
 void Sun::dimLight( float percent )
 {
     if(percent <= 0.0)
         percent = 0.0001;
 
-    osg::Vec4 gradient_color =
-        _colorGradient.getColorAtPercent( percent );
-
+    // Cosinus Verlauf für die Helligkeit
     percent = cos((1-percent) * (M_PI/2.0));
 
+    osg::Vec4 gradient_color =
+        _colorGradient.getColorAtPercent( percent );
 
     _viewer->getCamera()->setClearColor( osg::Vec4( gradient_color.x() * percent,
                                                     gradient_color.y() * percent,
@@ -122,6 +102,11 @@ bool Sun::getManualRotation()
 void Sun::setManualRotation(bool manualRotation)
 {
     _manualRotation = manualRotation;
+}
+
+osg::Matrix Sun::getLastRotationMatrix()
+{
+    return _lastRotMatrix;
 }
 
 void Sun::setLastRotationMatrix(osg::Matrix lastRotMatrix)

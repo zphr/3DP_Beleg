@@ -33,12 +33,12 @@ class Sun: public osg::MatrixTransform
     // static float _circleRadius;
     float getSunZPos();
     void dimLight( float percent );
-    void setDraggerHandleEvents(bool handleEvents);
 
     void toggleManualRotation();
     bool getManualRotation();
     void setManualRotation(bool manualRotation);
     void setLastRotationMatrix(osg::Matrix lastRotMatrix);
+    osg::Matrix getLastRotationMatrix();
     void rotateWithLastRotMatrix();
 
     osgShadow::ShadowMap* getShadowMap();
@@ -56,10 +56,6 @@ class Sun: public osg::MatrixTransform
     osg::ref_ptr<osgShadow::ShadowMap> _shadowMap;
     unsigned int _shadowMapRes;
 
-    osg::ref_ptr<osg::AutoTransform> _autoTransform;
-    osg::ref_ptr<osg::MatrixTransform> _sizeTransform;
-    osg::ref_ptr<osgManipulator::TrackballDragger> _rotDragger;
-    
     osg::ref_ptr<osg::LightSource> _lightSrc;
     ColorGradient _colorGradient;
     osgViewer::Viewer *_viewer;

@@ -18,7 +18,6 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <osgUtil/Tessellator>
 #include <osgUtil/SmoothingVisitor>
-// #include <osgManipulator/CompositeDragger>
 #include <osgManipulator/TranslateAxisDragger>
 #include <osgManipulator/TrackballDragger>
 #include <osgManipulator/ScaleAxisDragger>
@@ -38,6 +37,7 @@
 #include <osgParticle/ModularProgram>
 #include <osgParticle/AccelOperator>
 
+#include "TrackballAxisDragger.hpp"
 #include "FinalScene.h"
 #include "ColorGradient.h"
 #include "Sun.h"
@@ -681,67 +681,11 @@ void RundkuebelTest(osg::ref_ptr<osg::Group> &root)
 
 }
 
-class TrackballAxisDragger : public osgManipulator::CompositeDragger
-{
-    protected:
-    osg::ref_ptr<osgManipulator::TrackballDragger> _rotDragger;
-    osg::ref_ptr<osgManipulator::TranslateAxisDragger> _transDragger;
-    osg::ref_ptr<osgManipulator::ScaleAxisDragger> _scaleDragger;
-    osg::ref_ptr<osg::AutoTransform> _autoTransform;
-    osg::ref_ptr<osg::MatrixTransform> _sizeTransform;
-
-  public:
-    TrackballAxisDragger()
-    {
-        _autoTransform = new osg::AutoTransform;
-        _autoTransform->setAutoScaleToScreen(true);
-        addChild(_autoTransform.get());
-
-        _sizeTransform = new osg::MatrixTransform;
-        _sizeTransform->setMatrix(
-            osg::Matrix::scale(200, 200, 200));
-        _autoTransform->addChild(_sizeTransform.get());
-
-        _rotDragger = new osgManipulator::TrackballDragger;
-        _rotDragger->setName("TrackballDragger");
-        _sizeTransform->addChild(_rotDragger.get());
-
-        _scaleDragger = new osgManipulator::ScaleAxisDragger;
-        _scaleDragger->setName("ScaleAxisDragger");
-        _sizeTransform->addChild(_scaleDragger.get());
-
-        _transDragger = new osgManipulator::TranslateAxisDragger;
-        _transDragger->setName("TranslateAxisDragger");
-        _sizeTransform->addChild(_transDragger.get());
-
-
-        this->addDragger(_rotDragger.get());
-        this->addDragger(_scaleDragger.get());
-        this->addDragger(_transDragger.get());
-        this->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-        this->setParentDragger(getParentDragger());
-    
-    }
-
-    void setupDefaultGeometry()
-    {
-        _rotDragger->setupDefaultGeometry();
-
-        float axesScale = 1.5;
-        // _scaleDragger->setMatrix(
-        //     osg::Matrix::scale(axesScale,axesScale,axesScale));
-        _scaleDragger->setupDefaultGeometry();
-
-        axesScale = 1.5;
-        _transDragger->setMatrix(
-            osg::Matrix::scale(axesScale,axesScale,axesScale));
-        _transDragger->setupDefaultGeometry();
-    }
-
-};
-
 void DraggerTest(osg::ref_ptr<osg::Group> &root, FlowerBucket* scene)
 {
+    
+    RosePlant rose( 0x1 );
+    root->addChild( rose.releasePlant() );
 
     scene->getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
 
@@ -749,22 +693,24 @@ void DraggerTest(osg::ref_ptr<osg::Group> &root, FlowerBucket* scene)
     selection->addChild(scene);
     root->addChild( selection );
 
-    osg::ref_ptr<osgManipulator::TabBoxTrackballDragger> dragger =
-        new osgManipulator::TabBoxTrackballDragger();
+    osg::ref_ptr<TrackballAxisDragger> dragger =
+        new TrackballAxisDragger( osg::Vec3(),1.0 );
     dragger->setupDefaultGeometry();
-
+    
     root->addChild(dragger.get());
 
     float scale = 1.25;
-    dragger->setMatrix(osg::Matrix::scale((scene->getWidth())*scale,
-                                          (scene->getDepth())*scale,
-                                          (scene->getHeight())*scale )
+    dragger->setMatrix(osg::Matrix::scale((scene->getBound().radius())*scale,
+                                          (scene->getBound().radius())*scale,
+                                          (scene->getBound().radius())*scale)
                        * osg::Matrix::translate(scene->getBound().center())
                       );
+    
     dragger->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
     dragger->addTransformUpdating(selection.release());
     dragger->setHandleEvents(true);
     dragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_ALT);
+
 
 }
 
@@ -1092,9 +1038,9 @@ int main( int argc, char** argv)
     // ProfileSplineTest( root );
     // FinalSceneTest( shadow_root, viewer );
     // BucketControllerTest( root, viewer );
+
     // osg::ref_ptr<FlowerBucket> fb = new FlowerBucket();
     // DraggerTest( root, fb.get() );
-
     // viewer.setSceneData( root.get() );
     
     // ShadowTest( root, viewer );
@@ -1104,5 +1050,6 @@ int main( int argc, char** argv)
 
     
     FinalFinalSceneTest(viewer);
+
 }
 

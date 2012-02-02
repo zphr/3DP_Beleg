@@ -51,7 +51,7 @@ osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int extrudeShapeRes,
     osg::ref_ptr<osg::Vec4Array> extrude_verts = calcPoints(extrudeShapeRes);
 
     osg::Vec4 vert;
-    osg::ref_ptr<osg::Vec4Array> new_verts = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec3Array> new_verts = new osg::Vec3Array;
 
     osg::Vec3 normal;
     osg::ref_ptr<osg::Vec3Array> normals = new osg::Vec3Array;
@@ -86,7 +86,7 @@ osg::Geometry* CircleCurve::buildMeshAlongPath(unsigned int extrudeShapeRes,
 
             vert[3] = 1;
             vert =  vert * matrices[i];
-            new_verts->push_back(vert);
+            new_verts->push_back( osg::Vec3(vert.x(), vert.y(), vert.z()) );
 
             texc->push_back(osg::Vec2((tex_width * j)  * tile_u,
                                       (tex_height * i) * tile_v));

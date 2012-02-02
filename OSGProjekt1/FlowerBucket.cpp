@@ -16,7 +16,7 @@ const float FlowerBucket::_earthTileU = 2.0;
 const float FlowerBucket::_earthTileV = 2.0;
 
 const float FlowerBucket::_bucketTileU = 1.0;
-const float FlowerBucket::_bucketTileV = 1.4176;
+const float FlowerBucket::_bucketTileV = 0.5;
 
 FlowerBucket::FlowerBucket(float width, float depth)
 {
@@ -39,6 +39,16 @@ FlowerBucket::FlowerBucket(float width, float depth)
     _fenceModelWidth  = 0.267;
     _fenceModelHeight = 1.4176;
     _fenceModelDepth  = 0.047124;
+
+    osg::ref_ptr<osg::Material> material = new osg::Material;
+    material->setDiffuse( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    material->setSpecular( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    material->setShininess( osg::Material::FRONT, 1.0 );
+    material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+
+    osg::StateSet* state = this->getOrCreateStateSet();
+    state->setAttribute( material.release(),
+                         osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
 
     if(width < (_fenceModelWidth + _fenceModelOffset))
         _width = (_fenceModelWidth + _fenceModelOffset);
@@ -462,13 +472,13 @@ void FlowerBucket::buildEarth()
 
     osg::StateSet* state = gd->getOrCreateStateSet();
     state->setTextureAttributeAndModes(0, earth_tex.release(), osg::StateAttribute::ON);
-    osg::ref_ptr<osg::Material> material = new osg::Material;
-    material->setDiffuse( osg::Material::FRONT, osg::Vec4(1,1,1,1) );
-    material->setSpecular( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
-    material->setShininess( osg::Material::FRONT, 15.0 );
-    material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+    // osg::ref_ptr<osg::Material> material = new osg::Material;
+    // material->setDiffuse( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    // material->setSpecular( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    // material->setShininess( osg::Material::FRONT, 1.0 );
+    // material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
 
-    state->setAttribute( material.release() );
+    // state->setAttribute( material.release() );
 
     addChild( gd.release() );
 }

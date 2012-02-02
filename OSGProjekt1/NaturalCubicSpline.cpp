@@ -612,7 +612,7 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeR
     extrudeShapeRes = extrude_verts->getNumElements();
 
     osg::Vec4 vert;
-    osg::ref_ptr<osg::Vec4Array> new_verts = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec3Array> new_verts = new osg::Vec3Array;
 
     osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
 
@@ -647,7 +647,7 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeR
             vert[3] = 1;
             vert =  vert * matrices[i];
 
-            new_verts->push_back(vert);
+            new_verts->push_back(osg::Vec3(vert.x(), vert.y(), vert.z()) );
             
             texc->push_back(osg::Vec2(tex_width  * tile_u,
                                       tex_height * tile_v));
@@ -677,23 +677,23 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeR
             // Unten ganz links
             if(i == 0)
             {
-                e2 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
-                e3 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (*new_verts)[i+1] - (*new_verts)[i];
+                e3 = (*new_verts)[i+extrudeShapeRes] - (*new_verts)[i];
                 n = e3 ^ e2;
             }
             // Oben ganz links
             else if(i == (vert_count-extrudeShapeRes))
             {
-                e1 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e2 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
+                e1 = (*new_verts)[i-extrudeShapeRes] - (*new_verts)[i];
+                e2 = (*new_verts)[i+1] - (*new_verts)[i];
                 n = e2 ^ e1;
             }
             // am linken Rand 
             else
             {
-                e1 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e2 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
-                e3 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e1 = (*new_verts)[i-extrudeShapeRes] - (*new_verts)[i];
+                e2 = (*new_verts)[i+1] - (*new_verts)[i];
+                e3 = (*new_verts)[i+extrudeShapeRes] - (*new_verts)[i];
 
                 n = e2 ^ e1;
                 n += e3 ^ e2;
@@ -707,25 +707,25 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeR
             // Unten ganz rechts
             if(i == (extrudeShapeRes-1))
             {
-                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
+                e1 = (*new_verts)[i+extrudeShapeRes] - (*new_verts)[i];
+                e2 = (*new_verts)[i-1] - (*new_verts)[i];
 
                 n = e2 ^ e1;
             }
             // Oben ganz rechts
             else if(i == (vert_count-1))
             {
-                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
-                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e2 = (*new_verts)[i-1] - (*new_verts)[i];
+                e3 = (*new_verts)[i-extrudeShapeRes] - (*new_verts)[i];
 
                 n = e3 ^ e2;
             }
             // rechter Rand
             else
             {
-                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
-                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
+                e1 = (*new_verts)[i+extrudeShapeRes] - (*new_verts)[i];
+                e2 = (*new_verts)[i-1] - (*new_verts)[i];
+                e3 = (*new_verts)[i-extrudeShapeRes] - (*new_verts)[i];
 
                 n = e2 ^ e1;
                 n += e3 ^ e2;
@@ -738,9 +738,9 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeR
             // Unterer Rand
             if( (i / extrudeShapeRes) == 0)
             {
-                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
-                e4 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
+                e1 = (*new_verts)[i+extrudeShapeRes] - (*new_verts)[i];
+                e2 = (*new_verts)[i-1] - (*new_verts)[i];
+                e4 = (*new_verts)[i+1] - (*new_verts)[i];
 
                 n = e2 ^ e1;
                 n += e1 ^ e4;
@@ -749,9 +749,9 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeR
             // Oberer Rand
             else if((i/(vert_count - extrudeShapeRes) <= 1))
             {
-                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
-                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e4 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
+                e2 = (*new_verts)[i-1] - (*new_verts)[i];
+                e3 = (*new_verts)[i-extrudeShapeRes] - (*new_verts)[i];
+                e4 = (*new_verts)[i+1] - (*new_verts)[i];
 
                 n = e3 ^ e2;
                 n += e4 ^ e3;
@@ -760,10 +760,10 @@ osg::Geometry* NaturalCubicSpline::buildMeshAlongPath(unsigned int extrudeShapeR
             // in der Mitte
             else
             {
-                e1 = (convVec4To3((*new_verts)[i+extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e2 = (convVec4To3((*new_verts)[i-1]) - convVec4To3((*new_verts)[i]));
-                e3 = (convVec4To3((*new_verts)[i-extrudeShapeRes]) - convVec4To3((*new_verts)[i]));
-                e4 = (convVec4To3((*new_verts)[i+1]) - convVec4To3((*new_verts)[i]));
+                e1 = (*new_verts)[i+extrudeShapeRes] - (*new_verts)[i];
+                e2 = (*new_verts)[i-1] - (*new_verts)[i];
+                e3 = (*new_verts)[i-extrudeShapeRes] - (*new_verts)[i];
+                e4 = (*new_verts)[i+1] - (*new_verts)[i];
 
                 n = e2 ^ e1;
                 n += e3 ^ e2;

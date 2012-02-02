@@ -432,6 +432,10 @@
 				RelativePath=".\SunController.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\TrackballAxisDragger.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Headerdateien"
@@ -534,6 +538,10 @@
 				RelativePath=".\SunController.h"
 				>
 			</File>
+			<File
+				RelativePath=".\TrackballAxisDragger.hpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Ressourcendateien"
@@ -543,6 +551,10 @@
 		</Filter>
 		<File
 			RelativePath=".\ClassDiagram1.cd"
+			>
+		</File>
+		<File
+			RelativePath=".\ClassDiagram2.cd"
 			>
 		</File>
 	</Files>
