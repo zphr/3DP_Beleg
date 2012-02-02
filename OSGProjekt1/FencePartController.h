@@ -17,13 +17,16 @@ class FencePartController : public osgGA::GUIEventHandler, public FlowerBucketCt
 { 
   
   public:
-    FencePartController(osg::Group* root, FlowerBucket* flowerBucket);
+    FencePartController(osg::Group* root,
+                        unsigned int traversalMask,
+                        FlowerBucket* flowerBucket);
     ~FencePartController();
     virtual bool handle( const osgGA::GUIEventAdapter& ea,
                          osgGA::GUIActionAdapter& aa );
 
   protected:
     inline void resetGeometry();
+    unsigned int _traversalMask;
     
     unsigned int _windowWidth, _windowHeight;
     osg::ref_ptr<osg::Geometry> _geom;

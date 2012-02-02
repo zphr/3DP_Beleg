@@ -8,22 +8,22 @@ LeafGeode::LeafGeode()
 LeafGeode::LeafGeode(NaturalCubicSpline spline,
                      int resolution,
                      float scale,
-                     string imagePath)
+                     osg::Image* image)
 {
     _spline = spline;
 
-    setTexture(imagePath);
+    setTexture(image);
     addDrawable( _spline.buildExtrudedShape(resolution, scale) );
 }
 
 LeafGeode::LeafGeode(NaturalCubicSpline spline, NaturalCubicSpline extrudeShape,
-                int resolution, float scale, string imagePath)
+                     int resolution, float scale, osg::Image* image)
 {
     _spline = spline;
     _extrudeShape = extrudeShape;
     _spline.setExtrudeShape( &_extrudeShape );
 
-    setTexture(imagePath);
+    setTexture(image);
     addDrawable( _spline.buildExtrudedShape(resolution, scale) );
 }
 
@@ -32,13 +32,12 @@ LeafGeode::~LeafGeode()
      
 }
 
-inline void LeafGeode::setTexture(string imagePath)
+inline void LeafGeode::setTexture(osg::Image* image)
 {
-    if(imagePath != "")
+    if(image)
     {
         osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
-        osg::ref_ptr<osg::Image> image = osgDB::readImageFile(imagePath);
-        texture->setImage(image.get());
+        texture->setImage(image);
  
         osg::StateSet* state = getOrCreateStateSet();
         state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
@@ -48,11 +47,11 @@ inline void LeafGeode::setTexture(string imagePath)
         osg::BlendFunc* blend = new osg::BlendFunc;
         blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
         
-	state->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-	osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+        state->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+        osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
 	
-	alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
-	state->setAttributeAndModes( alphaFunc, osg::StateAttribute::ON );
+        alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
+        state->setAttributeAndModes( alphaFunc, osg::StateAttribute::ON );
         
     }
 }

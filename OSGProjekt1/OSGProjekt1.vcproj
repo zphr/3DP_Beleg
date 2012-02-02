@@ -409,11 +409,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PlantController.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RoseFlower.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\RoseLeaf.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RosePlant.cpp"
 				>
 			</File>
 			<File
@@ -503,11 +511,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PlantController.h"
+				>
+			</File>
+			<File
 				RelativePath=".\RoseFlower.h"
 				>
 			</File>
 			<File
 				RelativePath=".\RoseLeaf.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RosePlant.hpp"
 				>
 			</File>
 			<File

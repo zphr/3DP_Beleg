@@ -12,8 +12,7 @@ _intersectMask(0x16)
 
     _viewer.getCamera()->setCullMask( ~_cullMask );
 
-    setupBackground();
-    setupRose();
+    setupModels();
     setupLight();
     
     _viewer.setSceneData( _root );
@@ -35,7 +34,7 @@ void FinalScene::setupLight()
     colorGradient.addColorMarkerAt(0.432, osg::Vec4(0.374, 0.373, 0.468, 1));
     colorGradient.addColorMarkerAt(1.0, osg::Vec4(0.785, 0.844, 1.000, 1));
 
-    _sun = new Sun(40.0, colorGradient, &_viewer);
+    _sun = new Sun(40.0, colorGradient, &_viewer, 256);
 
     // _root->setShadowTechnique( _sun->getShadowMap() );
     _root->addChild( _sun.get() );
@@ -49,9 +48,9 @@ void FinalScene::setupController()
 
 }
 
-void FinalScene::setupBackground()
+void FinalScene::setupModels()
 {
-    
+
     // ---------------------------------------- Wand-Modell
 
     osg::ref_ptr<osg::Node> wall_model  = osgDB::readNodeFile("3d/Wand.obj");
@@ -80,21 +79,26 @@ void FinalScene::setupBackground()
     osg::Vec3 radius_vec(bound_radius, 0, 0);
     float gegenkathete = sin(osg::DegreesToRadians(45.0)) * radius_vec.length();
 
+    float height_offset = 0.1;
+
     osg::ref_ptr<osg::Vec3Array> ground_vertices = new osg::Vec3Array;
-    ground_vertices->push_back( osg::Vec3(-gegenkathete,0,0) );
-    ground_vertices->push_back( osg::Vec3(gegenkathete, 0, 0) );
-    ground_vertices->push_back( osg::Vec3(gegenkathete, -gegenkathete*2, 0) );
-    ground_vertices->push_back( osg::Vec3(-gegenkathete, -gegenkathete*2, 0) );
+    ground_vertices->push_back( osg::Vec3(-gegenkathete,               0, height_offset) );
+    ground_vertices->push_back( osg::Vec3( gegenkathete,               0, height_offset) );
+    ground_vertices->push_back( osg::Vec3( gegenkathete, -gegenkathete*2, height_offset) );
+    ground_vertices->push_back( osg::Vec3(-gegenkathete, -gegenkathete*2, height_offset) );
 
     osg::ref_ptr<osg::Geometry> ground_geom = new osg::Geometry;
     ground_geom->setVertexArray( ground_vertices.get() );
     ground_geom->addPrimitiveSet( new osg::DrawArrays(GL_QUADS, 0, ground_vertices->getNumElements()) );
+
     osg::ref_ptr<osg::Geode> ground_gd = new osg::Geode;
     ground_gd->addDrawable( ground_geom.get() );
     ground_gd->setNodeMask( _cullMask );
 
     vector< osg::ref_ptr<osg::Geometry> > ground_geoms;
     ground_geoms.push_back( ground_geom.release() );
+
+    // ---------------------------------------- Controller
 
     osg::ref_ptr<FlowerBucketController> flower_bucket_ctrl =
         new FlowerBucketController(_root.get(), ground_geoms,
@@ -103,12 +107,19 @@ void FinalScene::setupBackground()
 
     // erster Blumenkasten
     osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
-    _root->addChild( flower_bucket.release() );
+    _root->addChild( flower_bucket.get() );
 
     osg::ref_ptr<FencePartController> fence_part_ctrl =
-        new FencePartController(_root.get(), flower_bucket.get());
+        new FencePartController(_root.get(),
+                                _rcvShadowMask | _castShadowMask | _intersectMask,
+                                flower_bucket.release());
     _viewer.addEventHandler( fence_part_ctrl.release() );
     
+
+    osg::ref_ptr<PlantController> plant_ctrl =
+        new PlantController(_root.get(), _intersectMask);
+    _viewer.addEventHandler( plant_ctrl.release() );
+
     // ---------------------------------------- Hauptknoten
 
     osg::ref_ptr<osg::MatrixTransform> trans = new osg::MatrixTransform();
@@ -121,46 +132,16 @@ void FinalScene::setupBackground()
                       osg::Matrix().translate(0,10,0) );
 
     _root->addChild( trans.release() );
-}
 
-void FinalScene::setupRose()
-{
-    float delta = 22.5;
-    osg::Vec4 dist (0.0, 0.0, 1.0, 1.0);
-    osg::Matrix rot_mat;
+    // ---------------------------------------- Rose
 
-    map<char, string> rules;
-    rules['S'] = "[A(x)]+(66)[A(1.0)]+(66)[A(1.0)]+(66)[A(1.0)]F@";
-    rules['A'] = "&(45)F(x/1.456)^F(x/1.456)^F(x/1.456)[S]";
+    RosePlant rose( _intersectMask );
 
-    osg::ref_ptr<RoseLeaf> rose_leaf = new RoseLeaf();
-    vector<osg::ref_ptr<LeafGeode>> leaf_list;
-    leaf_list.push_back( rose_leaf.release() );
+    osg::ref_ptr<osg::MatrixTransform> rose_trans = new osg::MatrixTransform();
+    rose_trans->addChild( rose.releasePlant() );
+    rose_trans->setMatrix( osg::Matrix().translate(2.5,0.5,1.1) );
 
-    osg::ref_ptr<osg::Vec4Array> spline_points = new osg::Vec4Array;
-    spline_points->push_back(osg::Vec4(0.0,0.0,0,1));
-    spline_points->push_back(osg::Vec4(0.8,1.3,0,1));
-    spline_points->push_back(osg::Vec4(1,0.0,0,1));
-    NaturalCubicSpline spline(spline_points, 3);
-
-    osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
-    profile_points->push_back(osg::Vec4(0, 1.0, 0, 1));
-    profile_points->push_back(osg::Vec4(1, 0.5, 0, 1));
-    NaturalCubicSpline profile(profile_points, 3);
-
-    LSysPlant plant(3, delta, dist, rot_mat, 0.04, 0.70,
-                    30, 7,      // Jitter Prozente
-                    "3d/Stengel.png", profile,
-                    0.75, 0.90, new RoseFlower(),
-                    leaf_list, 0, 5, 144.0, 1.0, 0.85,
-                    spline, NaturalCubicSpline(),
-                    rules, rules['S']);
-
-    osg::ref_ptr<osg::Group> plant_group = plant.buildPlant();
-    plant_group->setNodeMask( _intersectMask ); 
-
-    _root->addChild( plant_group.release() );
-
+    _root->addChild( rose_trans.release() );
 }
 
 void FinalScene::run()

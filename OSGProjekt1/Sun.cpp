@@ -40,7 +40,7 @@ Sun::Sun(float circleRadius,
     // // _rotDragger->setHandleEvents(true);
     // _rotDragger->setActivationModKeyMask(osgGA::GUIEventAdapter::MODKEY_SHIFT);
 
-    _vec = osg::Vec4(0.0, 0.0, _circleRadius, 1.0);
+    _vec = osg::Vec4(0.0, 0.0, _circleRadius, 0.0);
 
     _lightSrc = new osg::LightSource();
     _lightSrc->getLight()->setPosition( _vec );

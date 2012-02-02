@@ -25,6 +25,7 @@
 #include "FencePart.h"
 #include "FencePartController.h"
 #include "FlowerBucketController.h"
+#include "PlantController.h"
 
 #include <iostream>
 #include <string>
@@ -54,7 +55,7 @@ protected:
 
     void setupLight();
     void setupController();
-    void setupBackground();
+    void setupModels();
     void setupRose();
         
 };

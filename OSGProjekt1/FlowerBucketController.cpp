@@ -61,6 +61,11 @@ inline void FlowerBucketController::setupRectangle(osg::Vec3 hitVec)
     _rectVerts->push_back( hitVec + _hOffsetVec );
     _rectVerts->push_back( hitVec + _hOffsetVec );
 
+    osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+    colors->push_back( FlowerBucketCtrlBase::_helperColor );
+    _rectGeom->setColorArray( colors.get() );
+    _rectGeom->setColorBinding( osg::Geometry::BIND_OVERALL );
+
     _rectGeom->setVertexArray( _rectVerts.get() );
     _rectGeom->addPrimitiveSet( new osg::DrawArrays(GL_QUADS, 0, _rectVerts->getNumElements()) );
 
@@ -155,6 +160,8 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
                 if(result.drawable == _groundGeoms[i])
                     _currentGround = _groundGeoms[i];
 
+            // wenn nicht kein Objekt aus _groundGeoms geschnitten
+            // wurde abbrechen
             if(_currentGround == 0)
                 return false;
 
@@ -180,6 +187,11 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
             {
                 osg::Vec3 hit_vec = result.getWorldIntersectPoint();
 
+                // Konstruktion der Grundflächen-Scheitelpunkte und
+                // Verschiebungsvektor:
+                //      die linke untere Ecke ist der
+                //      Verschiebungsvektor; folgende Fälle treten
+                //      dabei auf:
                 //           ^y
                 //           |
                 // 2---------1---------2
@@ -227,7 +239,7 @@ bool FlowerBucketController::handle( const osgGA::GUIEventAdapter& ea,
                 new_origin = (*_rectVerts)[2];
             else if( (draw_direction_vec.x() < 0) && (draw_direction_vec.y() > 0) )
                 new_origin = (*_rectVerts)[3];
-
+            
             osg::BoundingBox bbox =
                 (dynamic_cast<osg::Geode*> (_rectGeom->getParent(0)))->getBoundingBox();
             float width = bbox.xMax() - bbox.xMin();

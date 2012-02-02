@@ -15,17 +15,17 @@ class LeafGeode: public osg::Geode
         LeafGeode(NaturalCubicSpline spline,
                   int resolution=3,
                   float scale=1.0f,
-                  string imagePath="");
+                  osg::Image* image = 0);
 
         LeafGeode(NaturalCubicSpline spline,
                   NaturalCubicSpline extrudeShape,
                   int resolution=3,
                   float scale=1.0f,
-                  string imagePath="");
+                  osg::Image* image = 0);
 
         ~LeafGeode();
 
-        inline void setTexture(string imagePath);
+        inline void setTexture(osg::Image* image);
 
     protected:
         LeafGeode();

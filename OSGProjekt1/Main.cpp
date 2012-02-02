@@ -237,67 +237,67 @@ void DynamicQuadCallback::update( osg::NodeVisitor*,
 }
 
 
-void FlowerTest(osg::ref_ptr<osg::Group> &root)
-{
-    osg::ref_ptr<osg::Geode> gd = new osg::Geode;
+// void FlowerTest(osg::ref_ptr<osg::Group> &root)
+// {
+//     osg::ref_ptr<osg::Geode> gd = new osg::Geode;
 
-    // osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
-    // line_points->push_back(osg::Vec4(-0.5,-1,0,1));
-    // line_points->push_back(osg::Vec4(0, 0,0,1));
-    // line_points->push_back(osg::Vec4(-0.5,1,0,1));
+//     // osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
+//     // line_points->push_back(osg::Vec4(-0.5,-1,0,1));
+//     // line_points->push_back(osg::Vec4(0, 0,0,1));
+//     // line_points->push_back(osg::Vec4(-0.5,1,0,1));
 
-    osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
-    line_points->push_back(osg::Vec4(-0.75,  -1,0,1));
-    line_points->push_back(osg::Vec4(-0.15,-0.5,0,1));
-    line_points->push_back(osg::Vec4(   0,   0,0,1));
-    line_points->push_back(osg::Vec4(-0.15, 0.5,0,1));
-    line_points->push_back(osg::Vec4(-0.75,   1,0,1));
+//     osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
+//     line_points->push_back(osg::Vec4(-0.75,  -1,0,1));
+//     line_points->push_back(osg::Vec4(-0.15,-0.5,0,1));
+//     line_points->push_back(osg::Vec4(   0,   0,0,1));
+//     line_points->push_back(osg::Vec4(-0.15, 0.5,0,1));
+//     line_points->push_back(osg::Vec4(-0.75,   1,0,1));
 
-    NaturalCubicSpline line_spline(line_points, 1);
-    gd->addDrawable( line_spline.drawSpline() );
+//     NaturalCubicSpline line_spline(line_points, 1);
+//     gd->addDrawable( line_spline.drawSpline() );
 
-    osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
-    profile_points->push_back(osg::Vec4(0,0,0,1));
-    profile_points->push_back(osg::Vec4(0.3,0,0.55,1));
-    profile_points->push_back(osg::Vec4(0,0,1,1));
+//     osg::ref_ptr<osg::Vec4Array> profile_points = new osg::Vec4Array;
+//     profile_points->push_back(osg::Vec4(0,0,0,1));
+//     profile_points->push_back(osg::Vec4(0.3,0,0.55,1));
+//     profile_points->push_back(osg::Vec4(0,0,1,1));
 
-    NaturalCubicSpline profile_spline(profile_points,
-                                      12,
-                                      new NaturalCubicSpline(line_points, 1));
+//     NaturalCubicSpline profile_spline(profile_points,
+//                                       12,
+//                                       new NaturalCubicSpline(line_points, 1));
 
-    osg::ref_ptr<LeafGeode> leaf = new LeafGeode(profile_spline, 3, 0.5, "bluete1.png");
-    //root->addChild(leaf);
-    vector<osg::ref_ptr<LeafGeode>> leaf_list;
-    leaf_list.push_back( leaf );
+//     osg::ref_ptr<LeafGeode> leaf = new LeafGeode(profile_spline, 3, 0.5, "bluete1.png");
+//     //root->addChild(leaf);
+//     vector<osg::ref_ptr<LeafGeode>> leaf_list;
+//     leaf_list.push_back( leaf );
 
-    osg::ref_ptr<osg::Node> innen = osgDB::readNodeFile("3d/Bluete_innen.obj");
-    root->addChild( innen );
+//     osg::ref_ptr<osg::Node> innen = osgDB::readNodeFile("3d/Bluete_innen.obj");
+//     root->addChild( innen );
 
-    osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
-    osg::ref_ptr<osg::Image> image = osgDB::readImageFile("bluete1.png");
-    texture->setImage(image.get());
+//     osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
+//     osg::ref_ptr<osg::Image> image = osgDB::readImageFile("bluete1.png");
+//     texture->setImage(image.get());
 
-    osg::StateSet* state = innen->getOrCreateStateSet();
-    state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+//     osg::StateSet* state = innen->getOrCreateStateSet();
+//     state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
 
-    state->setMode(GL_BLEND, osg::StateAttribute::ON);
-    osg::BlendFunc* blend = new osg::BlendFunc;
-    blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+//     state->setMode(GL_BLEND, osg::StateAttribute::ON);
+//     osg::BlendFunc* blend = new osg::BlendFunc;
+//     blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
 
-    state->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-    osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+//     state->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+//     osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
 
-    alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
-    state->setAttributeAndModes( alphaFunc, osg::StateAttribute::ON );
+//     alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
+//     state->setAttributeAndModes( alphaFunc, osg::StateAttribute::ON );
 
-    osg::ref_ptr<FlowerGroup> flower = new FlowerGroup("3d/Bluete.obj",
-                                                       "",
-                                                       leaf_list,
-                                                       0.2, 1.0,
-                                                       137.2);
-    root->addChild( flower );
+//     osg::ref_ptr<FlowerGroup> flower = new FlowerGroup("3d/Bluete.obj",
+//                                                        "",
+//                                                        leaf_list,
+//                                                        0.2, 1.0,
+//                                                        137.2);
+//     root->addChild( flower );
 
-}
+// }
 
 void LeafTest(osg::ref_ptr<osg::Group> &root)
 {
@@ -438,9 +438,12 @@ void PlantStringTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer)
     profile_points->push_back(osg::Vec4(1, 0.5, 0, 1));
     NaturalCubicSpline profile(profile_points, 3);
 
+    osg::ref_ptr<osg::Image> stengel_img = osgDB::readImageFile("3d/Stengel.png");
+
     LSysPlant plant(3, delta, dist, rot_mat, 0.04, 0.70,
+                    3, 3,
                     30, 7,      // Jitter Prozente
-                    "3d/Stengel.png", profile,
+                    stengel_img.release(), profile,
                     0.75, 0.90, new RoseFlower(),
                     leaf_list, 0, 5, 144.0, 1.0, 0.85,
                     spline, NaturalCubicSpline(),
@@ -491,7 +494,7 @@ void DynamicKuebelTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &viewer
     osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
 
     osg::ref_ptr<FencePartController> ctrler =
-        new FencePartController(root.get(), flower_bucket.get());
+        new FencePartController(root.get(), 0x1, flower_bucket.get());
     viewer.addEventHandler( ctrler.release() );
 
     root->addChild( flower_bucket.release() );
@@ -872,7 +875,9 @@ void BucketControllerTest(osg::ref_ptr<osg::Group> &root, osgViewer::Viewer &vie
     osg::ref_ptr<FlowerBucket> flower_bucket = new FlowerBucket();
 
     osg::ref_ptr<FencePartController> ctrler =
-        new FencePartController(root.get(), flower_bucket.get());
+        new FencePartController(root.get(),
+                                0x1,
+                                flower_bucket.get());
     viewer.addEventHandler( ctrler.release() );
 
     root->addChild( flower_bucket.release() );
@@ -953,7 +958,7 @@ void ShadowTest(osg::ref_ptr<osg::Group> &rt, osgViewer::Viewer &viewer)
     flower_bucket->setNodeMask( rcvShadowMask | castShadowMask );
 
     osg::ref_ptr<FencePartController> ctrler =
-        new FencePartController(root.get(), flower_bucket.get());
+        new FencePartController(root.get(), 0x1, flower_bucket.get());
     viewer.addEventHandler( ctrler.release() );
 
     
@@ -1031,7 +1036,7 @@ void FinalSceneTest(osg::ref_ptr<osgShadow::ShadowedScene> &root, osgViewer::Vie
     flower_bucket->setNodeMask( 0x1 );
 
     osg::ref_ptr<FencePartController> ctrler =
-        new FencePartController(root.get(), flower_bucket.get());
+        new FencePartController(root.get(), 0x1, flower_bucket.get());
     viewer.addEventHandler( ctrler.release() );
     
     root->addChild( flower_bucket.release() );

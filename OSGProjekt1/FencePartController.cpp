@@ -1,6 +1,9 @@
 #include "FencePartController.h"
 
-FencePartController::FencePartController(osg::Group* root, FlowerBucket* flowerBucket)
+FencePartController::FencePartController(osg::Group* root,
+                                         unsigned int traversalMask,
+                                         FlowerBucket* flowerBucket)
+    : _traversalMask(traversalMask)
 {
     FlowerBucketCtrlBase::_currentBucket = flowerBucket;
 
@@ -35,9 +38,15 @@ FencePartController::FencePartController(osg::Group* root, FlowerBucket* flowerB
     root->addChild(HUDProjectionMatrix);
     HUDProjectionMatrix->addChild(HUDModelViewMatrix);
 
+
+    osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+    colors->push_back( FlowerBucketCtrlBase::_helperColor );
+
     _vertices = new osg::Vec3Array;
     _geom = new osg::Geometry();
     _geom->setVertexArray( _vertices.get() );    
+    _geom->setColorArray( colors.get() );
+    _geom->setColorBinding( osg::Geometry::BIND_OVERALL );
     _geom->addPrimitiveSet( new osg::DrawArrays(GL_LINE_LOOP, 0, _vertices->getNumElements()) );
 
     osg::ref_ptr<osg::Geode> gd = new osg::Geode;
@@ -52,6 +61,7 @@ FencePartController::FencePartController(osg::Group* root, FlowerBucket* flowerB
     // of geometry already draw.
     HUDStateSet->setMode(GL_DEPTH_TEST,osg::StateAttribute::OFF);
     HUDStateSet->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
+    HUDStateSet->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 
     // Need to make sure this geometry is draw last. RenderBins are handled
     // in numerical order so set bin number to 11
@@ -70,7 +80,12 @@ inline void FencePartController::resetGeometry()
     _vertices = new osg::Vec3Array;
     _geom->setVertexArray( _vertices.get() );    
     _geom->setPrimitiveSet(0, new osg::DrawArrays(GL_LINE_LOOP, 0, _vertices->getNumElements()) );
-                
+
+    osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+    colors->push_back( FlowerBucketCtrlBase::_helperColor );
+    _geom->setColorArray( colors.get() );
+    _geom->setColorBinding( osg::Geometry::BIND_OVERALL );
+
     _geom->dirtyDisplayList();
     _geom->dirtyBound();
 
@@ -106,6 +121,7 @@ bool FencePartController::handle( const osgGA::GUIEventAdapter& ea,
                         osgUtil::Intersector::WINDOW, ea.getX(), ea.getY());
 
                 osgUtil::IntersectionVisitor iv( intersector.get() );
+                iv.setTraversalMask( ~_traversalMask );
                 viewer->getCamera()->accept( iv );
 
                 // wenn nichts geschnitten wurde abbrechen!
@@ -148,7 +164,12 @@ bool FencePartController::handle( const osgGA::GUIEventAdapter& ea,
             {
                 if(_geom->getVertexArray()->getNumElements() <= 2 )
                     break;
-                
+
+                osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+                colors->push_back( osg::Vec4(1,1,1,1) );
+                _geom->setColorArray( colors.get() );
+                _geom->setColorBinding( osg::Geometry::BIND_OVERALL );
+
                 osg::ref_ptr<FencePart> fence_part = new FencePart(_geom);
                 FlowerBucketCtrlBase::_currentBucket->setFencePart( fence_part.release() );
 

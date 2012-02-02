@@ -29,9 +29,11 @@ class LSysPlant
               osg::Matrix        rotMatrix,
               float              baseScale,
               float              relativeLevelScale,
+              unsigned int       splineRes,
+              unsigned int       cylinderRes,
               unsigned int       translationJitter,
               unsigned int       rotationJitter,
-              string             branchImgPath,
+              osg::Image*        branchImg,
               NaturalCubicSpline branchProfile,
               float              baseFlowerScale,
               float              relativeFlowerScale,
@@ -54,6 +56,8 @@ class LSysPlant
     osg::Group* buildPlant();
   
   protected:
+
+    LSysPlant(){;}
 
     struct PlantStackElement
     {
@@ -90,6 +94,9 @@ class LSysPlant
     float              _leavesRelativeScale;
     NaturalCubicSpline _leavesProfile;
     NaturalCubicSpline _leavesSpline;
+
+    unsigned int _splineRes;
+    unsigned int _cylinderRes;
 
     osg::ref_ptr<osg::Texture2D> _branchTex;
     NaturalCubicSpline _branchProfile;

@@ -1,20 +1,40 @@
 #include "FlowerBucket.h"
 
+const osg::ref_ptr<osg::Node> FlowerBucket::_fencePartModel =
+    osgDB::readNodeFile("3d/latte.obj");
+
+const osg::ref_ptr<osg::Image> FlowerBucket::_fenceImg = 
+    osgDB::readImageFile( "3d/latte.png" );
+
+const osg::ref_ptr<osg::Image> FlowerBucket::_bucketImg = 
+    osgDB::readImageFile( "3d/kuebel_basis.png" );
+
+const osg::ref_ptr<osg::Image> FlowerBucket::_earthImg = 
+    osgDB::readImageFile( "3d/erde.png" );
+
+const float FlowerBucket::_earthTileU = 2.0;
+const float FlowerBucket::_earthTileV = 2.0;
+
+const float FlowerBucket::_bucketTileU = 1.0;
+const float FlowerBucket::_bucketTileV = 1.4176;
+
 FlowerBucket::FlowerBucket(float width, float depth)
 {
     _fpIndex = 0;
     _useModel = true;
 
-    _fencePartModel = osgDB::readNodeFile("3d/latte.obj");
-
-    osg::ref_ptr<osg::Image> image =
-        osgDB::readImageFile( "wood1.jpg" );
     _texture = new osg::Texture2D;
     _texture->setWrap(osg::Texture2D::WRAP_R, osg::Texture2D::REPEAT);
     _texture->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);
     _texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::REPEAT);
-    _texture->setImage( image.get() );
+    _texture->setImage( FlowerBucket::_fenceImg.get() );
     
+    _bucketTex = new osg::Texture2D;
+    _bucketTex->setWrap(osg::Texture2D::WRAP_R, osg::Texture2D::REPEAT);
+    _bucketTex->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);
+    _bucketTex->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::REPEAT);
+    _bucketTex->setImage( FlowerBucket::_bucketImg.get() );
+
     _fenceModelOffset = 0.08;
     _fenceModelWidth  = 0.267;
     _fenceModelHeight = 1.4176;
@@ -41,7 +61,7 @@ FlowerBucket::FlowerBucket(float width, float depth)
     float s[4] = {val,0,0,0};
     float t[4] = {0,0,val,0};
 
-    calcParameters(_fencePartModel.get(), _fenceWidth, 1.0, r, s, t);
+    calcParameters(FlowerBucket::_fencePartModel.get(), _fenceWidth, 1.0, r, s, t);
     
     _verts = new osg::Vec3Array();
     _verts->push_back(osg::Vec3(0,0,0));
@@ -146,20 +166,25 @@ void FlowerBucket::buildBucket()
 {
     osg::ref_ptr<osg::Geode> kasten_gd = new osg::Geode;
 
-    kasten_gd->addDrawable( buildBoxWalls(_verts, _fenceHeight-0.2, 0, 0, 2.0, 12.0) );
-    kasten_gd->addDrawable( buildBoxWalls(_verts, _fenceHeight-0.2, 0.1, 0, 2.0, 12.0) );
+    float tile_u = _fenceHeight / FlowerBucket::_bucketTileU;
+    float tile_v = _width / FlowerBucket::_bucketTileV;
+
+    kasten_gd->addDrawable( buildBoxWalls(_verts, _fenceHeight-0.2, 0, 0,
+                                          tile_u, tile_v ) );
+    kasten_gd->addDrawable( buildBoxWalls(_verts, _fenceHeight-0.2, 0.1, 0,
+                                          tile_u, tile_v) );
     kasten_gd->addDrawable( buildBoxWalls(_verts, _fenceHeight/10.0, -_fenceOffset/2.0, 7*_fenceHeight/10.0, 0.1, 12.0) );
     kasten_gd->addDrawable( buildBoxWalls(_verts, _fenceHeight/10.0, -_fenceOffset/2.0, _fenceHeight/10.0, 0.1, 12.0) );
 
     osg::StateSet* state = kasten_gd->getOrCreateStateSet();
-    state->setTextureAttributeAndModes(0,_texture,osg::StateAttribute::ON);
+    state->setTextureAttributeAndModes(0, FlowerBucket::_bucketTex, osg::StateAttribute::ON);
 
     // osg::PolygonMode * polygonMode = new osg::PolygonMode;
     // polygonMode->setMode( osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE );
     // state->setAttributeAndModes( polygonMode,
     //                              osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
 
-    addChild( kasten_gd.release() );
+	addChild( kasten_gd.release() ); 
 }
 
 osg::Geometry* FlowerBucket::buildBoxWalls(osg::ref_ptr<osg::Vec3Array> verts,
@@ -278,7 +303,10 @@ void FlowerBucket::buildEarth()
     osg::ref_ptr<osg::Vec2Array> texc = new osg::Vec2Array;
     float tex_x  = 1.0 / (_fenceCountX-1);
     float tex_y = 1.0 / (_fenceCountY-1);
-    
+
+    float tile_u = _width / FlowerBucket::_earthTileU;
+    float tile_v = _depth / FlowerBucket::_earthTileV;
+
     osg::ref_ptr<osg::DrawElementsUInt> face_indices = new osg::DrawElementsUInt( GL_QUADS );
 
     for(int i=0; i < res_x; i++)
@@ -291,7 +319,8 @@ void FlowerBucket::buildEarth()
                           // _fenceHeight/1.25
                           ((float)(rand() % 100))/(1000.0*(1.0-((rand()%2)*2))) + _fenceHeight/1.25
                          ));
-            texc->push_back(osg::Vec2(tex_x * j, tex_y * i));
+            texc->push_back(osg::Vec2(tile_u * (tex_x * j),
+                                      tile_v *( tex_y * i)));
 
             if((i < (res_x-1)) && (j < (res_y-1)))
             {
@@ -424,6 +453,23 @@ void FlowerBucket::buildEarth()
 
     osg::ref_ptr<osg::Geode> gd = new osg::Geode;
     gd->addDrawable( geom.release() );
+    
+    osg::ref_ptr<osg::Texture2D> earth_tex = new osg::Texture2D;
+    earth_tex->setWrap(osg::Texture2D::WRAP_R, osg::Texture2D::REPEAT);
+    earth_tex->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);
+    earth_tex->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::REPEAT);
+    earth_tex->setImage( FlowerBucket::_earthImg.get() );
+
+    osg::StateSet* state = gd->getOrCreateStateSet();
+    state->setTextureAttributeAndModes(0, earth_tex.release(), osg::StateAttribute::ON);
+    osg::ref_ptr<osg::Material> material = new osg::Material;
+    material->setDiffuse( osg::Material::FRONT, osg::Vec4(1,1,1,1) );
+    material->setSpecular( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    material->setShininess( osg::Material::FRONT, 15.0 );
+    material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+
+    state->setAttribute( material.release() );
+
     addChild( gd.release() );
 }
 
@@ -478,7 +524,8 @@ void FlowerBucket::swapModels()
         float s[4] = {val,0,0,0};
         float t[4] = {0,0,val,0};
 
-        calcParameters(_fencePartModel.get(), _fenceWidth, 1.0, r, s, t);
+        calcParameters(FlowerBucket::_fencePartModel.get(),
+                       _fenceWidth, 1.0, r, s, t);
         
         buildFence();
     }

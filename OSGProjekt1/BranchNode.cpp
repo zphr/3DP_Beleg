@@ -211,6 +211,8 @@ void BranchNode::buildLeaves(unsigned int leavesCount,
         transMat->postMult(osg::Matrix::scale(leavesScale, leavesScale, leavesScale));
         transMat->postMult(osg::Matrix::rotate(distributionAngle*i, 0,0,1));
         transMat->postMult(_spline.calcFrameAt(t));
+        // TODO: mit rand() noch unterschiedliche _leavesGeodes
+        // auswählen!
         transMat->addChild(_leavesGeodes[0]);
         addChild(transMat.release());
     }

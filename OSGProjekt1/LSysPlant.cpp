@@ -8,9 +8,11 @@ LSysPlant::LSysPlant(
     osg::Matrix        rotMatrix,
     float              baseScale,
     float              relativeLevelScale,
+    unsigned int       splineRes,
+    unsigned int       cylinderRes,
     unsigned int       translationJitter,
     unsigned int       rotationJitter,
-    string             branchImgPath,
+    osg::Image*        branchImg,
     NaturalCubicSpline branchProfile,
     float              baseFlowerScale,
     float              relativeFlowerScale,
@@ -27,27 +29,29 @@ LSysPlant::LSysPlant(
     string             startWord,
     string             variable)
     : _repeats(repeats),
-   _delta(delta),
-   _rules(rules),
-   _startWord(startWord),
-   _distanceVector(distanceVector),
-   _rotMatrix(rotMatrix),
-   _baseScale(baseScale),
-   _translationJitter(translationJitter),
-   _rotationJitter(rotationJitter),
-   _relativeLevelScale(relativeLevelScale),
-   _branchProfile(branchProfile),
-   _baseFlowerScale(baseFlowerScale),
-   _relativeFlowerScale(relativeFlowerScale),
-   _variable(variable),
-   _leavesCount(leavesCount),
-   _leavesDistributionAngle(leavesDistributionAngle),
-   _leavesBaseScale(leavesBaseScale),
-   _leavesRelativeScale(leavesRelativeScale),
-   _leavesProfile(leavesProfile),
-   _leavesSpline(leavesSpline)
+      _delta(delta),
+      _rules(rules),
+      _startWord(startWord),
+      _distanceVector(distanceVector),
+      _rotMatrix(rotMatrix),
+      _baseScale(baseScale),
+      _translationJitter(translationJitter),
+      _rotationJitter(rotationJitter),
+      _relativeLevelScale(relativeLevelScale),
+      _splineRes(splineRes),
+      _cylinderRes(cylinderRes),
+      _branchProfile(branchProfile),
+      _baseFlowerScale(baseFlowerScale),
+      _relativeFlowerScale(relativeFlowerScale),
+      _variable(variable),
+      _leavesCount(leavesCount),
+      _leavesDistributionAngle(leavesDistributionAngle),
+      _leavesBaseScale(leavesBaseScale),
+      _leavesRelativeScale(leavesRelativeScale),
+      _leavesProfile(leavesProfile),
+      _leavesSpline(leavesSpline)
 {
-    osg::ref_ptr<osg::Image> branch_img = osgDB::readImageFile(branchImgPath);
+    osg::ref_ptr<osg::Image> branch_img = branchImg;
 
     _branchTex = new osg::Texture2D();
     _branchTex->setWrap(osg::Texture2D::WRAP_R, osg::Texture2D::REPEAT);
@@ -60,18 +64,12 @@ LSysPlant::LSysPlant(
     
     _flower = flower;
     _firstBranch = new BranchNode(_flower.get(), _leavesGeodes);
-    
-    osg::ref_ptr<osg::Vec4Array> new_v4array = new osg::Vec4Array;
-    _vertices = new osg::Vec4Array;
-    _vertices->push_back( osg::Vec4(0.0, 0.0, 0.0, 1.0) );
-    _indices = new osg::DrawElementsUInt( GL_LINES );
+
 }
 
 LSysPlant::~LSysPlant(void)
 { 
     _firstBranch.release();
-    _vertices.release();
-
 }
 
 void LSysPlant::generatePlantWord()
@@ -387,13 +385,11 @@ osg::Group* LSysPlant::buildPlant()
     generatePlantWord();
     generatePlant();
 
-    
-
     osg::ref_ptr<BranchVisitor> branch_visitor =
         new BranchVisitor(_baseScale,
                           _relativeLevelScale,
-                          3,
-                          6,
+                          _splineRes,
+                          _cylinderRes,
                           _branchTex.get(),
                           &_branchProfile,
                           _leavesLevel,
@@ -408,4 +404,3 @@ osg::Group* LSysPlant::buildPlant()
     
     return _firstBranch.get();
 }
-

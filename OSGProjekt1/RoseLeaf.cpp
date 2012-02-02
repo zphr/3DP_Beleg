@@ -1,5 +1,8 @@
 #include "RoseLeaf.h"
 
+const osg::ref_ptr<osg::Image> RoseLeaf::_leafImg = 
+    osgDB::readImageFile("blatt.png");
+
 RoseLeaf::RoseLeaf()
 {
     osg::ref_ptr<osg::Vec4Array> line_points = new osg::Vec4Array;
@@ -15,12 +18,12 @@ RoseLeaf::RoseLeaf()
     profile_points->push_back(osg::Vec4(1,0,0,1));
 
     NaturalCubicSpline profile_spline(profile_points,
-                                      12,
+                                      2,
                                       new NaturalCubicSpline(line_points, 1)
                                       );
-    addDrawable( profile_spline.buildExtrudedShape(3, 0.5) );
+    addDrawable( profile_spline.buildExtrudedShape(2, 0.5) );
 
-    setTexture("blatt.png");
+    setTexture(RoseLeaf::_leafImg.get());
 }
 
 RoseLeaf::~RoseLeaf()

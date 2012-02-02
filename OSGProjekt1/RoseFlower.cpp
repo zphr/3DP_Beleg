@@ -1,5 +1,20 @@
 #include "RoseFlower.h"
 
+const osg::ref_ptr<osg::Image> RoseFlower::_leafImg =
+    osgDB::readImageFile("bluete1.png");
+
+const osg::ref_ptr<osg::Image> RoseFlower::_bodyImg =
+    osgDB::readImageFile("3d/bluetenbasis.png");
+
+const osg::ref_ptr<osg::Node>  RoseFlower::_bodyModel =
+    osgDB::readNodeFile("3d/Bluete.obj");
+
+const osg::ref_ptr<osg::Node> RoseFlower::_insideModel =
+    osgDB::readNodeFile("3d/Bluete_innen.obj");
+
+const osg::ref_ptr<osg::Image> RoseFlower::_insideImg =
+    osgDB::readImageFile("bluete1.png");
+
 RoseFlower::RoseFlower()
 {
     // ---------------------------------------- Blütenblätter
@@ -20,19 +35,19 @@ RoseFlower::RoseFlower()
     leaf_points->push_back(osg::Vec4(0,0,1,1));
     
     NaturalCubicSpline leaf_spline(leaf_points,
-                                   12,
+                                   2,
                                    new NaturalCubicSpline(profile_points, 1));
     
     // -------------------- Blatt-Objekt
-    osg::ref_ptr<LeafGeode> leaf = new LeafGeode(leaf_spline, 3, 0.5, "bluete1.png");
+    osg::ref_ptr<LeafGeode> leaf = new LeafGeode(leaf_spline, 2, 0.5,
+                                                 RoseFlower::_leafImg.get());
     _petalGeodes.push_back( leaf );
     
     // ---------------------------------------- Körper Mesh
-    _body = osgDB::readNodeFile("3d/Bluete.obj");
+    _body = RoseFlower::_bodyModel.get();
 
     osg::ref_ptr<osg::Texture2D> body_texture = new osg::Texture2D;
-    osg::ref_ptr<osg::Image> body_image = osgDB::readImageFile("3d/bluetenbasis.png");
-    body_texture->setImage(body_image.release());
+    body_texture->setImage(RoseFlower::_bodyImg.get());
 
     osg::StateSet* body_state = _body->getOrCreateStateSet();
     body_state->setTextureAttributeAndModes(0,body_texture,osg::StateAttribute::ON);
@@ -46,31 +61,13 @@ RoseFlower::RoseFlower()
     body_alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
     body_state->setAttributeAndModes( body_alphaFunc, osg::StateAttribute::ON );
 
-
     // ---------------------------------------- Inside Mesh
-    _inside = osgDB::readNodeFile("3d/Bluete_innen.obj");
-    
+    _inside = RoseFlower::_insideModel.get();
     osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
-    osg::ref_ptr<osg::Image> image = osgDB::readImageFile("bluete1.png");
-    texture->setImage(image.get());
+    texture->setImage(RoseFlower::_insideImg.get());
 
     osg::StateSet* state = _inside->getOrCreateStateSet();
     state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-
-    
-
-    // ---------------------------------------- Blüte
-    
-    // // -------------------- Blend
-    // state->setMode(GL_BLEND, osg::StateAttribute::ON);
-    // osg::BlendFunc* blend = new osg::BlendFunc;
-    // blend->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-        
-    // // -------------------- Alpha
-    // state->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-    // osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-    // alphaFunc->setFunction(osg::AlphaFunc::GREATER,0.6f);
-    // state->setAttributeAndModes( alphaFunc, osg::StateAttribute::ON );
     
     _petalStartRadius  = 0.2;
     _petalEndRadius    = 1.0;
@@ -79,7 +76,6 @@ RoseFlower::RoseFlower()
     _samples = 8;
     
     buildFlower(false);
-    
 }
 
 RoseFlower::~RoseFlower()

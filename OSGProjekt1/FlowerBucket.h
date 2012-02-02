@@ -5,6 +5,7 @@
 #include <osg/MatrixTransform>
 #include <osg/Geometry>
 #include <osg/Geode>
+#include <osg/Material>
 #include <osgDB/ReadFile>
 #include <osg/TextureCubeMap>
 #include <osg/Texture2D>
@@ -27,6 +28,7 @@ class FlowerBucket: public osg::Group
     float getHeight() { return _fenceHeight + _fenceHOffset; }
 
   protected:
+    
     void buildFence();
     inline void calcParameters(osg::Node *fencePart,
                                float fp_width, float scale_ratio,
@@ -40,8 +42,12 @@ class FlowerBucket: public osg::Group
                                  float tile_v = 1.0);
 
     void buildEarth();
+    
+    static const osg::ref_ptr<osg::Image> _fenceImg;
+    static const osg::ref_ptr<osg::Node> _fencePartModel;
+    static const osg::ref_ptr<osg::Image> _bucketImg;
+    static const osg::ref_ptr<osg::Image> _earthImg;
 
-    osg::ref_ptr<osg::Node> _fencePartModel;
     osg::ref_ptr<osg::Node> _fencePart;
 
     float _width;
@@ -69,6 +75,17 @@ class FlowerBucket: public osg::Group
     osg::ref_ptr<osg::Vec3Array> _verts;
     osg::ref_ptr<osg::Geode> _fpGeode;
     osg::ref_ptr<osg::Texture2D> _texture;
+    osg::ref_ptr<osg::Texture2D> _bucketTex;
+
+    
+    static const float _bucketTileU;
+    static const float _bucketTileV;
+
+    static const float _earthTileU;
+    static const float _earthTileV;
+
+    // float _earthTileU;
+    // float _earthTileV;
 
     int _fpIndex;
 };
