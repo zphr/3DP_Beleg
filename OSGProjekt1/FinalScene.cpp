@@ -14,8 +14,8 @@ _intersectMask(0x16)
 
     _viewer.getCamera()->setCullMask( ~_cullMask );
 
-    setupModels();
     setupLight();
+    setupModels();
 
     osg::ref_ptr<FinalController> final_ctrl = new FinalController( this );
     _viewer.addEventHandler( final_ctrl.release() );
@@ -41,7 +41,7 @@ void FinalScene::setupLight()
 
     _sun = new Sun(40.0, colorGradient, &_viewer, 512);
 
-    _root->setShadowTechnique( _sun->getShadowMap() );
+    _root->setShadowTechnique( _sun->getShadowMap() ); 
     _root->addChild( _sun.get() );
 
     osg::ref_ptr<SunController> sun_ctrl = new SunController(_sun.get());
@@ -135,6 +135,16 @@ void FinalScene::setupModels()
     trans->setMatrix( osg::Matrix().scale(scale, scale, scale) *
                       osg::Matrix().translate(0,10,0) );
 
+    osg::ref_ptr<osg::Material> material = new osg::Material;
+    material->setDiffuse( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    material->setSpecular( osg::Material::FRONT, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    material->setShininess( osg::Material::FRONT, 1.0 );
+    material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+
+    osg::StateSet* state = trans->getOrCreateStateSet();
+    state->setAttribute( material.release(),
+                         osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
+    
     _root->addChild( trans.release() );
 
     // ---------------------------------------- Rose
@@ -168,6 +178,7 @@ void FinalScene::setupModels()
 
 void FinalScene::run()
 {
+    // _viewer.setUpViewInWindow(0, 0,1680, 1050, 0);
     _viewer.run();
 }
 

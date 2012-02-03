@@ -23,32 +23,43 @@ class LSysPlant
 {
   public:
 
-    LSysPlant(unsigned int       repeats,
-              float              delta,
-              osg::Vec4          distanceVector,
-              osg::Matrix        rotMatrix,
-              float              baseScale,
-              float              relativeLevelScale,
-              unsigned int       splineRes,
-              unsigned int       cylinderRes,
-              unsigned int       translationJitter,
-              unsigned int       rotationJitter,
-              osg::Image*        branchImg,
-              NaturalCubicSpline branchProfile,
-              float              baseFlowerScale,
-              float              relativeFlowerScale,
-              FlowerGroup*       flower,
-              vector<osg::ref_ptr<LeafGeode>> leavesGeodes,
-              unsigned int       leavesLevel,
-              unsigned int       leavesCount,
-              float              leavesDistributionAngle,
-              float              leavesBaseScale,
-              float              leavesRelativeScale,
-              NaturalCubicSpline leavesProfile,
-              NaturalCubicSpline leavesSpline,
-              map<char,string>   rules,
-              string             startWord,
-              string             variable = "x");
+    LSysPlant(unsigned int       repeats, // Iterationen des L-Systems
+              float              delta,   // Grundwinkel
+              osg::Vec4          distanceVector, // Grundvektor für
+                                                 // F/f Befehle
+              osg::Matrix        rotMatrix,      // Grundrotation
+              float              baseScale,      // Ausgangsdicke der Äste
+              float              relativeLevelScale, // Prozentualer
+                                                     // Abzug pro Level
+              unsigned int       splineRes,          // Auflösung der Astsplines
+              unsigned int       cylinderRes,        // Auflösung der
+                                                     // extrudierten Zylinder
+              unsigned int       translationJitter,  // zufällige
+                                                     // Translation in Prozent
+              unsigned int       rotationJitter,     // zufällige
+                                                     // Rotation in Prozent
+              osg::Image*        branchImg,          // Ast-Textur
+              NaturalCubicSpline branchProfile,      // Ast Profil
+              float              baseFlowerScale,    // Größe der Blüten
+              float              relativeFlowerScale, // Abnahme pro Level
+              FlowerGroup*       flower,              // Blütenobjekt
+              vector<osg::ref_ptr<LeafGeode>> leavesGeodes, // Blatt-Modelle
+              unsigned int       leavesLevel,               // Startlevel
+                                                            // für Blätter
+              unsigned int       leavesCount,               // Anzahl
+                                                            // Blätter
+                                                            // pro Ast
+              float              leavesDistributionAngle,   // Verteilungswinkel
+              float              leavesBaseScale,           // Ausgangsgröße
+              float              leavesRelativeScale,       // Skalierung
+                                                            // pro Level
+              NaturalCubicSpline leavesProfile,             // Skalierung
+                                                            // über Spline
+              NaturalCubicSpline leavesSpline,              // Skalierungsspline
+              map<char,string>   rules,                     // L-System Regeln
+              string             startWord,                
+              string             variable = "x"); // Variablenname für
+                                                  // ffparser
 
     ~LSysPlant(void);
     void generatePlant();

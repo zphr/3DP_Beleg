@@ -66,15 +66,29 @@ RoseFlower::RoseFlower()
     osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
     texture->setImage(RoseFlower::_insideImg.get());
 
-    osg::StateSet* state = _inside->getOrCreateStateSet();
-    state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+    osg::StateSet* insige_state = _inside->getOrCreateStateSet();
+    insige_state->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
     
     _petalStartRadius  = 0.2;
     _petalEndRadius    = 1.0;
     _distributionAngle = 137.2;
     _time = 6.0;
     _samples = 8;
-    
+
+    // ---------------------------------------- Material
+
+    osg::ref_ptr<osg::Material> material = new osg::Material;
+    material->setDiffuse( osg::Material::FRONT_AND_BACK, osg::Vec4(0.8, 0.8, 0.8, 1.0) );
+    material->setSpecular( osg::Material::FRONT_AND_BACK, osg::Vec4(0.8, 0.2, 0.2, 1.0) );
+    material->setShininess( osg::Material::FRONT_AND_BACK, 1.0 );
+    material->setAmbient( osg::Material::FRONT_AND_BACK, osg::Vec4(0.8, 0.2, 0.2, 1.0) );
+    material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+
+    osg::StateSet* state = this->getOrCreateStateSet();
+    state->setAttribute( material.release(),
+                         osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
+
+
     buildFlower(false);
 }
 

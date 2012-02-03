@@ -176,8 +176,7 @@ void LSysPlant::generatePlant()
         f_result = 1.0;
         angle = _delta;
 
-        // ---------------------------------------- Funktions Auswertung
-        // -------------------------------------------------------------
+        // ---------------------------------------- Funktions-String Auswertung
         if(i+1 < _startWord.length())
         {
             if(_startWord[i+1] == '(')

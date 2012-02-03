@@ -47,6 +47,7 @@ FlowerBucket::FlowerBucket(float width, float depth)
     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
 
     osg::StateSet* state = this->getOrCreateStateSet();
+
     state->setAttribute( material.release(),
                          osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON );
 

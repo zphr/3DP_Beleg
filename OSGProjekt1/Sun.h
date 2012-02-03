@@ -22,7 +22,7 @@ class Sun: public osg::MatrixTransform
         ColorGradient colorGradient,
         osgViewer::Viewer *viewer,
         unsigned int shadowMapRes = 1024,
-        osg::Vec4 diffuseLight  = osg::Vec4(0.8, 0.8, 0.8, 1.0),
+        osg::Vec4 diffuseLight  = osg::Vec4(1, 1, 1, 1.0),
         osg::Vec4 specularLight = osg::Vec4(0.5, 0.5, 0.5, 1.0),
         osg::Vec4 ambientLight  = osg::Vec4(0.25, 0.25, 0.5, 1.0));
 

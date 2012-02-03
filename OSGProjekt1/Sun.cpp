@@ -64,18 +64,18 @@ void Sun::dimLight( float percent )
                                                     gradient_color.z() * percent,
                                                     1.0) );
 
-    _lightSrc->getLight()->setDiffuse( osg::Vec4( gradient_color.x() * percent,
-                                                  gradient_color.y() * percent,
-                                                  gradient_color.z() * percent,
+    _lightSrc->getLight()->setDiffuse( osg::Vec4( _diffuseLight.x() * percent,
+                                                  _diffuseLight.y() * percent,
+                                                  _diffuseLight.z() * percent,
                                                   1.0) );
 
     _lightSrc->getLight()->setSpecular( osg::Vec4( _specularLight.x() * percent,
                                                    _specularLight.y() * percent,
                                                    _specularLight.z() * percent,
                                                    1.0));
-    _lightSrc->getLight()->setAmbient( osg::Vec4( _ambientLight.x() * percent,
-                                                  _ambientLight.y() * percent,
-                                                  _ambientLight.z() * percent,
+    _lightSrc->getLight()->setAmbient( osg::Vec4( gradient_color.x() * percent,
+                                                  gradient_color.y() * percent,
+                                                  gradient_color.z() * percent,
                                                   1.0));
 
 
